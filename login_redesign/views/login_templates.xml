@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+    Login Page Redesign — Animated Background + Glassmorphism
+      - web.login_layout : backend login (/web/login)
+      - website.login_layout : website frontend login
+      - web.login : form fields + icons
+      - auth_signup.signup : signup form fields
+      - auth_signup.reset_password : reset password form
+    -->
+
+    <!-- ============================================================
+         BACKEND LOGIN LAYOUT
+         ============================================================ -->
+    <template id="login_redesign.layout"
+              inherit_id="web.login_layout"
+              name="Login Layout Redesign">
+
+        <xpath expr="//div[hasclass('container')]" position="before">
+            <style>
+                body.bg-100, html body.bg-100 {
+                    background: #0f0c29 !important;
+                    background-color: #0f0c29 !important;
+                }
+                .container.login_modern_container .card,
+                .container.login_modern_container .o_database_list,
+                .container.login_modern_container .card.bg-100,
+                .container.login_modern_container .o_database_list.bg-100 {
+                    background: rgba(255, 255, 255, 0.06) !important;
+                    background-color: rgba(255, 255, 255, 0.06) !important;
+                }
+                .container.login_modern_container .card-body {
+                    background: transparent !important;
+                }
+                .container.login_modern_container .card,
+                .container.login_modern_container .o_database_list,
+                .container.login_modern_container .card-body {
+                    color: #fff !important;
+                }
+                .container.login_modern_container label,
+                .container.login_modern_container .form-label,
+                .container.login_modern_container .col-form-label {
+                    color: rgba(255, 255, 255, 0.9) !important;
+                }
+                @media (prefers-color-scheme: light) {
+                    body.bg-100, html body.bg-100 {
+                        background: #f5f3fa !important;
+                        background-color: #f5f3fa !important;
+                    }
+                    .container.login_modern_container .card,
+                    .container.login_modern_container .o_database_list,
+                    .container.login_modern_container .card.bg-100,
+                    .container.login_modern_container .o_database_list.bg-100 {
+                        background: rgba(255, 255, 255, 0.85) !important;
+                        background-color: rgba(255, 255, 255, 0.85) !important;
+                    }
+                    .container.login_modern_container .card-body {
+                        background: transparent !important;
+                    }
+                    .container.login_modern_container .card,
+                    .container.login_modern_container .o_database_list,
+                    .container.login_modern_container .card-body {
+                        color: #2d2440 !important;
+                    }
+                    .container.login_modern_container label,
+                    .container.login_modern_container .form-label,
+                    .container.login_modern_container .col-form-label {
+                        color: #4a3f6b !important;
+                    }
+                }
+            </style>
+        </xpath>
+
+        <xpath expr="//div[hasclass('container')]" position="before">
+            <div class="login_animated_bg"/>
+            <div class="login_floating_shapes">
+                <div class="login_shape login_shape_1"/>
+                <div class="login_shape login_shape_2"/>
+                <div class="login_shape login_shape_3"/>
+                <div class="login_shape login_shape_4"/>
+                <div class="login_shape login_shape_5"/>
+                <div class="login_shape login_shape_6"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('container')]" position="attributes">
+            <attribute name="class" add="login_modern_container" separator=" "/>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         WEBSITE FRONTEND LOGIN LAYOUT
+         ============================================================ -->
+    <template id="login_redesign.website_layout"
+              inherit_id="website.login_layout"
+              name="Website Login Layout Redesign">
+
+        <xpath expr="//div[hasclass('oe_website_login_container')]" position="before">
+            <style>
+                body {
+                    background: #0f0c29 !important;
+                    background-color: #0f0c29 !important;
+                }
+                .oe_website_login_container.login_modern_container .card,
+                .oe_website_login_container.login_modern_container .o_database_list {
+                    background: rgba(255, 255, 255, 0.06) !important;
+                    color: #fff !important;
+                }
+                .oe_website_login_container.login_modern_container label,
+                .oe_website_login_container.login_modern_container .form-label {
+                    color: rgba(255, 255, 255, 0.9) !important;
+                }
+                .oe_website_login_container.login_modern_container .card-body {
+                    background: transparent !important;
+                }
+                @media (prefers-color-scheme: light) {
+                    body {
+                        background: #f5f3fa !important;
+                        background-color: #f5f3fa !important;
+                    }
+                    .oe_website_login_container.login_modern_container .card,
+                    .oe_website_login_container.login_modern_container .o_database_list {
+                        background: rgba(255, 255, 255, 0.85) !important;
+                        color: #2d2440 !important;
+                    }
+                    .oe_website_login_container.login_modern_container label,
+                    .oe_website_login_container.login_modern_container .form-label {
+                        color: #4a3f6b !important;
+                    }
+                }
+            </style>
+        </xpath>
+
+        <xpath expr="//div[hasclass('oe_website_login_container')]" position="before">
+            <div class="login_animated_bg"/>
+            <div class="login_floating_shapes">
+                <div class="login_shape login_shape_1"/>
+                <div class="login_shape login_shape_2"/>
+                <div class="login_shape login_shape_3"/>
+                <div class="login_shape login_shape_4"/>
+                <div class="login_shape login_shape_5"/>
+                <div class="login_shape login_shape_6"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('oe_website_login_container')]" position="attributes">
+            <attribute name="class" add="login_modern_container" separator=" "/>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         LOGIN FORM — glass bg + redesigned inputs + custom button
+         ============================================================ -->
+    <template id="login_redesign.login_form"
+              inherit_id="web.login"
+              name="Enhanced Login Form">
+
+        <!-- Heading before the form -->
+<!--        <xpath expr="//form" position="before">-->
+<!--            <div class="text-center mb-4">-->
+<!--                <h3 class="fw-bold login_heading">Welcome back</h3>-->
+<!--                <p class="login_subtitle">Sign in to continue to your account</p>-->
+<!--            </div>-->
+<!--        </xpath>-->
+
+        <!-- Glass form + Bootstrap utility classes -->
+        <xpath expr="//form" position="attributes">
+            <attribute name="class"
+                       add="bg-100 oe_login_form px-5 py-5 rounded-5 login_glass_form"
+                       separator=" "/>
+        </xpath>
+
+        <!-- Email: floating label style -->
+        <xpath expr="//div[hasclass('field-login')]" position="replace">
+            <div class="mb-4 field-login login_input_group">
+                <div class="login_input_wrapper text-dark">
+                    <i class="fa fa-envelope login_input_icon"/>
+                    <input type="text" placeholder="Email address"
+                           name="login" t-att-value="login" id="login"
+                           class="form-control login_input_field"
+                           required="required" autocapitalize="off"
+                           autocomplete="username"/>
+                    <label for="login" class="login_floating_label">Email</label>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- Password: floating label + eye toggle -->
+        <xpath expr="//div[hasclass('o_caps_lock_warning')]" position="replace">
+            <div class="mb-4 field-password login_input_group">
+                <div class="login_input_wrapper">
+                    <i class="fa fa-lock login_input_icon"/>
+                    <input type="password" placeholder="Password"
+                           name="password" id="password"
+                           class="form-control login_input_field"
+                           required="required" autocomplete="current-password"
+                           t-att-autofocus="'autofocus' if login else None"
+                           maxlength="4096"/>
+                    <label for="password" class="login_floating_label text-dark">Password</label>
+                    <button type="button" class="login_eye_btn o_show_password"
+                            aria-label="Show password">
+                        <i class="fa fa-eye"/>
+                    </button>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- Alerts inside glass -->
+        <xpath expr="//p[hasclass('alert')]" position="attributes">
+            <attribute name="class" add="login_alert_glass" separator=" "/>
+        </xpath>
+
+        <!-- Submit button: custom gradient colors -->
+        <xpath expr="//button[@type='submit']" position="replace">
+            <button type="submit" class="btn login_submit_btn">
+                <span>Log in</span>
+                <i class="fa fa-arrow-right ms-2"/>
+            </button>
+        </xpath>
+
+        <!-- Database: compact glass style -->
+        <xpath expr="//div[@t-if='databases and len(databases) &gt; 1']" position="replace">
+            <div class="mb-4 login_db_selector" t-if="databases and len(databases) &gt; 1">
+                <div class="login_input_wrapper">
+                    <i class="fa fa-database login_input_icon"/>
+                    <input type="text" name="db" t-att-value="request.db" id="db"
+                           class="form-control login_input_field"
+                           required="required" readonly="readonly"
+                           placeholder="Database"/>
+                    <a role="button" href="/web/database/selector"
+                       class="login_db_btn">Select</a>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- OAuth separator -->
+        <xpath expr="//div[hasclass('oe_login_buttons')]" position="inside">
+            <div class="login_separator" t-if="not debug">
+                <span>or continue with</span>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         SIGNUP FORM — icons + enhanced button
+         ============================================================ -->
+    <template id="login_redesign.signup_form"
+              inherit_id="auth_signup.signup"
+              name="Enhanced Signup Form">
+
+        <!-- Name label with icon -->
+        <xpath expr="//label[@for='name']" position="replace">
+            <label for="name" class="form-label">
+                <i class="fa fa-user me-1" style="opacity:0.5;font-size:0.75rem;"/>
+                Name
+            </label>
+        </xpath>
+
+        <!-- Email label with icon -->
+        <xpath expr="//label[@for='login']" position="replace">
+            <label for="login" class="form-label">
+                <i class="fa fa-envelope me-1" style="opacity:0.5;font-size:0.75rem;"/>
+                Email
+            </label>
+        </xpath>
+
+        <!-- Sign up button with icon -->
+        <xpath expr="//button[@type='submit']" position="replace">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-user-plus me-2"/>Sign up
+            </button>
+        </xpath>
+
+        <!-- Heading -->
+        <xpath expr="//form" position="before">
+            <div class="text-center mb-3">
+                <h3 class="fw-bold" style="color: inherit;">Create Account</h3>
+                <p style="color: inherit; opacity: 0.6; font-size: 0.85rem;">
+                    Join us today — it only takes a moment
+                </p>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         RESET PASSWORD FORM — enhanced button
+         ============================================================ -->
+    <template id="login_redesign.reset_form"
+              inherit_id="auth_signup.reset_password"
+              name="Enhanced Reset Password Form">
+
+        <!-- Reset button with icon -->
+        <xpath expr="//button[@type='submit']" position="replace">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-key me-2"/>Reset Password
+            </button>
+        </xpath>
+
+        <!-- Heading -->
+        <xpath expr="//form" position="before">
+            <div class="text-center mb-3">
+                <h3 class="fw-bold" style="color: inherit;">Reset Password</h3>
+                <p style="color: inherit; opacity: 0.6; font-size: 0.85rem;">
+                    Enter your email to receive reset instructions
+                </p>
+            </div>
+        </xpath>
+    </template>
+</odoo>

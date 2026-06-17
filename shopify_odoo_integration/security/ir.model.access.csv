@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shopify_sync_user,shopify.sync.user,model_shopify_sync,base.group_system,1,1,1,1

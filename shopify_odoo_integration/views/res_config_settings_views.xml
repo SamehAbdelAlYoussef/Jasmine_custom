@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.shopify</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="20"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Shopify" data-string="Shopify" name="shopify_odoo_integration">
+                    <block title="API Connection" name="shopify_api_settings">
+                        <setting
+                            id="shopify_shop_url_setting"
+                            string="Shopify Shop URL"
+                            help="Your Shopify store domain (e.g. mystore.myshopify.com)"
+                            title="The base URL of your Shopify store, used to build API endpoints."
+                        >
+                            <field name="shopify_shop_url" placeholder="mystore.myshopify.com"/>
+                        </setting>
+                        <setting
+                            id="shopify_access_token_setting"
+                            string="Access Token"
+                            help="Shopify Admin API access token for authentication"
+                            title="Generate from Shopify Admin → Settings → Apps and sales channels → Develop apps."
+                        >
+                            <field name="shopify_access_token" placeholder="shpat_..." password="True"/>
+                        </setting>
+                        <div class="mt-3 text-center">
+                            <button
+                                name="action_sync_orders_from_settings"
+                                string="Sync Orders Now"
+                                type="object"
+                                class="btn btn-primary me-2"
+                            />
+                            <button
+                                name="action_test_shopify_connection"
+                                string="Test Connection"
+                                type="object"
+                                class="btn btn-secondary"
+                            />
+                        </div>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

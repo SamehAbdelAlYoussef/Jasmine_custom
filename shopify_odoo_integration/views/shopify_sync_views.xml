@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Shopify Sync Form -->
+    <record id="view_shopify_sync_form" model="ir.ui.view">
+        <field name="name">shopify.sync.form</field>
+        <field name="model">shopify.sync</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Sync Job Name"/>
+                        </h1>
+                    </div>
+                    <group string="Sync Status">
+                        <field name="last_sync_id"/>
+                    </group>
+                    <footer>
+                        <button name="action_test_connection" string="Test Connection" type="object" class="btn-secondary"/>
+                        <button name="sync_orders" string="Sync Orders Now" type="object" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Shopify Sync List -->
+    <record id="view_shopify_sync_tree" model="ir.ui.view">
+        <field name="name">shopify.sync.tree</field>
+        <field name="model">shopify.sync</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="last_sync_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Shopify Sync Action -->
+    <record id="action_shopify_sync" model="ir.actions.act_window">
+        <field name="name">Shopify Sync</field>
+        <field name="res_model">shopify.sync</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_shopify_sync"
+        name="Shopify Sync"
+        parent="sale.menu_sales_config"
+        action="action_shopify_sync"
+        sequence="31"/>
+</odoo>

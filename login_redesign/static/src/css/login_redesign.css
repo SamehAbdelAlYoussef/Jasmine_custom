@@ -1,0 +1,1212 @@
+/* ============================================================
+   Login Page Redesign — Animated Background + Glassmorphism
+   Modern, attractive login with smooth animations.
+   Only visual styling — no core functionality is touched.
+   ============================================================ */
+
+/* ---------- OVERRIDE bg-100 (white) — force dark theme ---------- */
+/* The original template sets bg-100 on body and card.
+   VERY aggressive selectors to win over Bootstrap/Odoo bg-100 utility. */
+
+/* Kill white body background */
+html body.bg-100,
+html body.o_web_client.bg-100,
+body.bg-100 {
+    background: #0f0c29 !important;
+    background-color: #0f0c29 !important;
+}
+
+/* Kill white card background — every possible selector combo */
+.login_modern_container .card,
+.login_modern_container .card.bg-100,
+.login_modern_container .o_database_list,
+.login_modern_container .o_database_list.bg-100,
+.login_modern_container div.card,
+.login_modern_container div.o_database_list,
+.login_modern_container [class*="bg-100"].card,
+.login_modern_container [class*="bg-100"].o_database_list {
+    background: rgba(255, 255, 255, 0.06) !important;
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Kill any white inside card-body */
+.login_modern_container .card-body,
+.login_modern_container .o_database_list .card-body {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* ---------- ANIMATED GRADIENT BACKGROUND ---------- */
+.login_animated_bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    background: linear-gradient(-45deg,
+        #0f0c29,  /* deep purple */
+        #1a1a3e,  /* dark indigo */
+        #24243e,  /* slate navy */
+        #1a0a2e,  /* deep violet */
+        #16213e,  /* dark blue */
+        #0f3460,  /* teal navy */
+        #1a1a2e,  /* dark slate */
+        #0a1628   /* midnight */
+    );
+    background-size: 600% 600%;
+    animation: login_gradient_shift 25s ease infinite;
+}
+
+
+@keyframes login_gradient_shift {
+    0%   { background-position: 0% 50%; }
+    25%  { background-position: 100% 0%; }
+    50%  { background-position: 100% 100%; }
+    75%  { background-position: 0% 100%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ---------- FLOATING ANIMATED SHAPES ---------- */
+.login_floating_shapes {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.login_shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.08;
+    filter: blur(40px);
+    will-change: transform;
+}
+
+.login_shape_1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+    top: -10%;
+    left: -5%;
+    animation: login_float_1 18s ease-in-out infinite;
+}
+
+.login_shape_2 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+    top: 60%;
+    right: -8%;
+    animation: login_float_2 22s ease-in-out infinite;
+}
+
+.login_shape_3 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+    bottom: -10%;
+    left: 30%;
+    animation: login_float_3 20s ease-in-out infinite;
+}
+
+.login_shape_4 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+    top: 20%;
+    right: 20%;
+    animation: login_float_4 16s ease-in-out infinite;
+}
+
+.login_shape_5 {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, #10b981 0%, transparent 70%);
+    top: 40%;
+    left: 5%;
+    animation: login_float_5 19s ease-in-out infinite;
+}
+
+.login_shape_6 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, #f59e0b 0%, transparent 70%);
+    top: 5%;
+    right: 35%;
+    animation: login_float_6 14s ease-in-out infinite;
+}
+
+@keyframes login_float_1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%     { transform: translate(80px, 60px) scale(1.2); }
+    66%     { transform: translate(-40px, 30px) scale(0.85); }
+}
+
+@keyframes login_float_2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%     { transform: translate(-90px, -50px) scale(1.15); }
+    66%     { transform: translate(30px, -70px) scale(0.9); }
+}
+
+@keyframes login_float_3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%     { transform: translate(-60px, -80px) scale(1.1); }
+    66%     { transform: translate(50px, 20px) scale(0.95); }
+}
+
+@keyframes login_float_4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%     { transform: translate(70px, -40px) scale(1.25); }
+    66%     { transform: translate(-50px, -20px) scale(0.8); }
+}
+
+@keyframes login_float_5 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%     { transform: translate(-45px, 55px) scale(1.3); }
+    66%     { transform: translate(60px, -30px) scale(0.85); }
+}
+
+@keyframes login_float_6 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%     { transform: translate(-70px, -60px) scale(1.2); }
+}
+
+/* ---------- CONTAINER ---------- */
+.login_modern_container {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================================
+   GLASSMORPHISM CARD
+   Target via container's custom class to avoid conflict
+   with t-attf-class on the card element.
+   ============================================================ */
+
+/* -- Card base — frosted glass -- */
+.login_modern_container .card,
+.login_modern_container .o_database_list {
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 20px !important;
+    box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 0 80px -20px rgba(139, 92, 246, 0.25) !important;
+    transition:
+        box-shadow 0.5s ease,
+        border-color 0.5s ease,
+        transform 0.3s ease;
+    max-width: 400px !important;
+    width: 100%;
+}
+
+/* -- Card hover — enhanced glow -- */
+.login_modern_container .card:hover,
+.login_modern_container .o_database_list:hover {
+    box-shadow:
+        0 12px 50px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+        0 0 120px -15px rgba(139, 92, 246, 0.4),
+        0 0 60px -10px rgba(6, 182, 212, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ---------- CARD BODY ---------- */
+.login_modern_container .o_database_list .card-body {
+    padding: 2rem 1.75rem;
+}
+
+/* ---------- LOGO AREA ---------- */
+.login_modern_container .o_database_list .card-body > .text-center.pb-3 {
+    padding-bottom: 1.25rem !important;
+    margin-bottom: 1.5rem !important;
+    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.login_modern_container .o_database_list .card-body img[alt="Logo"] {
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15));
+    transition: filter 0.4s ease, transform 0.4s ease;
+    max-height: 100px !important;
+}
+
+.login_modern_container .o_database_list:hover .card-body img[alt="Logo"] {
+    filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.3));
+    transform: scale(1.03);
+}
+
+/* ---------- FORM INPUTS ---------- */
+.login_modern_container .o_database_list input.form-control {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    transition:
+        border-color 0.35s ease,
+        background 0.35s ease,
+        box-shadow 0.35s ease;
+    caret-color: #a855f7;
+}
+
+.login_modern_container .o_database_list input.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.login_modern_container .o_database_list input.form-control:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(168, 85, 247, 0.55) !important;
+    box-shadow:
+        0 0 0 3px rgba(168, 85, 247, 0.15),
+        0 0 20px -5px rgba(139, 92, 246, 0.25) !important;
+    outline: none;
+}
+
+/* ---------- ALL TEXT INSIDE CARD — force white on dark ---------- */
+.login_modern_container .card,
+.login_modern_container .o_database_list,
+.login_modern_container .card .card-body,
+.login_modern_container .o_database_list .card-body {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ---------- LABELS ---------- */
+.login_modern_container .o_database_list .form-label,
+.login_modern_container .o_database_list label,
+.login_modern_container .o_database_list .col-form-label,
+.login_modern_container .card .form-label,
+.login_modern_container .card label,
+.login_modern_container .card .col-form-label {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.35rem;
+}
+
+/* ============================================================
+   BUTTONS — Full button system redesign
+   ============================================================ */
+
+/* -- Primary Button — gradient + glow + scale -- */
+.login_modern_container .o_database_list .btn-primary,
+.login_modern_container .o_database_list button[type="submit"] {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.75rem 2rem !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.03em !important;
+    color: #fff !important;
+    width: 100% !important;
+    box-shadow:
+        0 4px 20px rgba(139, 92, 246, 0.4),
+        0 1px 0 rgba(255, 255, 255, 0.15) inset !important;
+    transition:
+        box-shadow 0.35s ease,
+        transform 0.2s ease,
+        filter 0.35s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shine effect on hover */
+.login_modern_container .o_database_list .btn-primary::after,
+.login_modern_container .o_database_list button[type="submit"]::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 100%);
+    transition: left 0.5s ease;
+}
+
+.login_modern_container .o_database_list .btn-primary:hover,
+.login_modern_container .o_database_list button[type="submit"]:hover {
+    box-shadow:
+        0 6px 30px rgba(139, 92, 246, 0.6),
+        0 0 60px -10px rgba(99, 102, 241, 0.4),
+        0 1px 0 rgba(255, 255, 255, 0.2) inset !important;
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.login_modern_container .o_database_list .btn-primary:hover::after,
+.login_modern_container .o_database_list button[type="submit"]:hover::after {
+    left: 100%;
+}
+
+.login_modern_container .o_database_list .btn-primary:active,
+.login_modern_container .o_database_list button[type="submit"]:active {
+    transform: translateY(1px) scale(0.98);
+    filter: brightness(0.95);
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3) !important;
+}
+
+/* -- Link Button — subtle underline reveal -- */
+.login_modern_container .o_database_list .btn-link {
+    color: rgba(255, 255, 255, 0.6) !important;
+    text-decoration: none !important;
+    font-size: 0.85rem;
+    font-weight: 400;
+    transition: color 0.3s ease;
+    position: relative;
+    padding-bottom: 2px;
+}
+
+.login_modern_container .o_database_list .btn-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: rgba(168, 85, 247, 0.7);
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+.login_modern_container .o_database_list .btn-link:hover {
+    color: rgba(168, 85, 247, 0.9) !important;
+    text-decoration: none !important;
+}
+
+.login_modern_container .o_database_list .btn-link:hover::after {
+    width: 100%;
+    left: 0;
+}
+
+/* ============================================================
+   FORM BACKGROUND — subtle glass panel inside the card
+   ============================================================ */
+.login_modern_container .o_database_list form,
+.login_modern_container .o_database_list .oe_login_form,
+.login_modern_container .o_database_list .oe_signup_form,
+.login_modern_container .o_database_list .oe_reset_password_form {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 14px !important;
+    padding: 1.5rem !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ---------- FOOTER LINKS ---------- */
+.login_modern_container .o_database_list .border-top {
+    border-top-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.login_modern_container .o_database_list .card-body .text-center.small a {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.78rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.login_modern_container .o_database_list .card-body .text-center.small a:hover {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.login_modern_container .o_database_list .card-body .text-center.small a span {
+    color: rgba(168, 85, 247, 0.7);
+}
+
+/* ---------- ALERTS / MESSAGES ---------- */
+.login_modern_container .o_database_list .alert {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #fca5a5;
+    font-size: 0.85rem;
+}
+
+.login_modern_container .o_database_list .alert-success {
+    color: #86efac;
+}
+
+/* ============================================================
+   ENHANCED FORM DESIGN — Modern, polished form elements
+   ============================================================ */
+
+/* -- Form groups — clean spacing -- */
+.login_modern_container .o_database_list .mb-3,
+.login_modern_container .o_database_list .mb-3.field-name,
+.login_modern_container .o_database_list .mb-3.field-login {
+    margin-bottom: 1.2rem !important;
+}
+
+/* -- Input group (password + eye toggle) -- */
+.login_modern_container .o_database_list .input-group {
+    border-radius: 10px !important;
+    overflow: hidden;
+}
+
+.login_modern_container .o_database_list .input-group input.form-control {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-right: none !important;
+}
+
+.login_modern_container .o_database_list .input-group .btn,
+.login_modern_container .o_database_list .input-group .o_show_password {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-left: none !important;
+    border-radius: 0 10px 10px 0 !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    transition: color 0.3s;
+}
+
+.login_modern_container .o_database_list .input-group .btn:hover,
+.login_modern_container .o_database_list .input-group .o_show_password:hover {
+    color: rgba(168, 85, 247, 0.8) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* -- Form title / heading -- */
+.login_modern_container .o_database_list .oe_login_form h3,
+.login_modern_container .o_database_list .oe_signup_form h3,
+.login_modern_container .o_database_list .oe_reset_password_form h3 {
+    color: #fff !important;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+/* -- Separator "— or —" -- */
+.login_modern_container .o_database_list .oe_login_buttons {
+    position: relative;
+    padding-top: 1.25rem;
+}
+
+.login_modern_container .o_database_list .oe_login_buttons::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 20%,
+        rgba(255, 255, 255, 0.2) 80%,
+        transparent 100%);
+}
+
+/* -- OAuth buttons -- */
+.login_modern_container .o_database_list .oe_login_oauth_btn {
+    border-radius: 10px !important;
+    margin: 0.25rem 0;
+}
+
+/* -- Select / dropdown -- */
+.login_modern_container .o_database_list select.form-control,
+.login_modern_container .o_database_list select.form-select {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    padding: 0.7rem 0.9rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.5)' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+}
+
+/* -- Checkbox -- */
+.login_modern_container .o_database_list input[type="checkbox"] {
+    accent-color: #8b5cf6;
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    cursor: pointer;
+}
+
+/* -- Form animations -- */
+.login_modern_container .o_database_list .mb-3 {
+    animation: login_field_fadein 0.5s ease backwards;
+}
+
+.login_modern_container .o_database_list .mb-3:nth-child(1) { animation-delay: 0.05s; }
+.login_modern_container .o_database_list .mb-3:nth-child(2) { animation-delay: 0.1s; }
+.login_modern_container .o_database_list .mb-3:nth-child(3) { animation-delay: 0.15s; }
+.login_modern_container .o_database_list .mb-3:nth-child(4) { animation-delay: 0.2s; }
+.login_modern_container .o_database_list .mb-3:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes login_field_fadein {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================
+   OAUTH BUTTONS
+   ============================================================ */
+.login_modern_container .o_database_list .oe_login_buttons .btn + .btn {
+    margin-top: 0.5rem;
+}
+
+/* ============================================================
+   CUSTOM FORM ELEMENTS — glass inputs + custom buttons
+   ============================================================ */
+
+/* -- Form glass background panel — premium glassmorphism -- */
+/* Padding + border-radius handled by Bootstrap px-5 py-5 rounded-5 */
+.login_glass_form {
+    background: rgba(255, 255, 255, 0.04) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 0 80px -20px rgba(139, 92, 246, 0.15),
+        0 0 40px -10px rgba(6, 182, 212, 0.1) !important;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glass reflection line — top edge glow */
+.login_glass_form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 5%;
+    width: 90%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 20%,
+        rgba(255, 255, 255, 0.25) 50%,
+        rgba(255, 255, 255, 0.15) 80%,
+        transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Subtle inner glow at bottom */
+.login_glass_form::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 25%;
+    width: 50%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(139, 92, 246, 0.2),
+        transparent);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* -- Heading & subtitle -- */
+.login_heading {
+    color: #fff !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+}
+.login_subtitle {
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 0.85rem !important;
+    margin-top: 0.25rem;
+}
+
+/* -- Input wrapper (icon + input + label + eye button) -- */
+.login_input_wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    overflow: hidden;
+}
+.login_input_wrapper:focus-within {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12), 0 0 20px -5px rgba(139, 92, 246, 0.2);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+/* -- Input icon (left side) -- */
+.login_input_icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.9rem;
+    pointer-events: none;
+    transition: color 0.3s ease;
+    z-index: 1;
+}
+.login_input_wrapper:focus-within .login_input_icon {
+    color: rgba(168, 85, 247, 0.8);
+}
+
+/* -- Input field -- */
+.login_input_field {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: #fff !important;
+    font-size: 0.95rem !important;
+    padding: 0.85rem 1rem 0.85rem 2.75rem !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+.login_input_field::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
+.login_input_field:focus {
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* -- Eye toggle button (password) -- */
+.login_eye_btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.35) !important;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    z-index: 1;
+    border-radius: 6px !important;
+}
+.login_eye_btn:hover {
+    color: rgba(168, 85, 247, 0.8) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* -- Floating label (hidden by default, shown when input has value) -- */
+.login_floating_label {
+    display: none;
+}
+
+/* -- DB selector button -- */
+.login_db_btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(139, 92, 246, 0.2) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 8px !important;
+    color: #a78bfa !important;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: background 0.3s, color 0.3s;
+    z-index: 1;
+    white-space: nowrap;
+}
+.login_db_btn:hover {
+    background: rgba(139, 92, 246, 0.35) !important;
+    color: #fff !important;
+}
+
+/* -- Submit button — custom gradient -- */
+.login_submit_btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem;
+    width: 100% !important;
+    padding: 0.8rem 2rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow:
+        0 4px 20px rgba(6, 182, 212, 0.3),
+        0 0 40px -10px rgba(59, 130, 246, 0.2) !important;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.35s ease, filter 0.35s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shine sweep on hover */
+.login_submit_btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%);
+    transition: left 0.5s ease;
+}
+
+.login_submit_btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 6px 28px rgba(6, 182, 212, 0.45),
+        0 0 60px -5px rgba(59, 130, 246, 0.35) !important;
+    filter: brightness(1.1);
+}
+
+.login_submit_btn:hover::after {
+    left: 100%;
+}
+
+.login_submit_btn:active {
+    transform: translateY(1px) scale(0.98);
+    filter: brightness(0.95);
+}
+
+/* -- Alert glass -- */
+.login_alert_glass {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    border-radius: 10px !important;
+    color: #fca5a5 !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.85rem !important;
+}
+.login_alert_glass.alert-success {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+    color: #86efac !important;
+}
+
+/* -- Separator "or continue with" -- */
+.login_separator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.25rem 0 0.75rem;
+}
+.login_separator::before,
+.login_separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+.login_separator span {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 480px) {
+    .login_modern_container .card,
+    .login_modern_container .o_database_list {
+        max-width: 92% !important;
+        border-radius: 16px !important;
+    }
+
+    .login_modern_container .o_database_list .card-body {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .login_shape_1 { width: 250px; height: 250px; }
+    .login_shape_2 { width: 200px; height: 200px; }
+    .login_shape_3 { width: 180px; height: 180px; }
+}
+
+/* ---------- ACCESSIBILITY: REDUCE MOTION ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .login_animated_bg,
+    .login_shape {
+        animation: none !important;
+    }
+}
+
+/* ============================================================
+   DYNAMIC LIGHT MODE — @media (prefers-color-scheme: light)
+   When the user's system is in light mode, switch to a
+   beautiful light version of the same design.
+   ============================================================ */
+@media (prefers-color-scheme: light) {
+    /* -- Body — light gradient -- */
+    body.bg-100 {
+        background: #f5f3fa !important;
+        background-color: #f5f3fa !important;
+    }
+
+    /* -- Animated bg — soft light gradient -- */
+    .login_animated_bg {
+        background: linear-gradient(-45deg,
+            #f5f3fa,  /* soft lavender */
+            #ede9f6,  /* light purple */
+            #f0f4ff,  /* light indigo */
+            #f8f6fc,  /* off white lavender */
+            #eef2ff,  /* light blue tint */
+            #f0edf7,  /* subtle purple */
+            #f5f8ff,  /* pale indigo */
+            #ede9fe   /* light violet */
+        );
+        background-size: 600% 600%;
+    }
+
+    /* -- Floating shapes — softer pastels -- */
+    .login_shape_1 {
+        background: radial-gradient(circle, #c4b5fd 0%, transparent 70%);
+        opacity: 0.15;
+    }
+    .login_shape_2 {
+        background: radial-gradient(circle, #67e8f9 0%, transparent 70%);
+        opacity: 0.15;
+    }
+    .login_shape_3 {
+        background: radial-gradient(circle, #f9a8d4 0%, transparent 70%);
+        opacity: 0.12;
+    }
+    .login_shape_4 {
+        background: radial-gradient(circle, #a78bfa 0%, transparent 70%);
+        opacity: 0.15;
+    }
+    .login_shape_5 {
+        background: radial-gradient(circle, #86efac 0%, transparent 70%);
+        opacity: 0.12;
+    }
+    .login_shape_6 {
+        background: radial-gradient(circle, #fde68a 0%, transparent 70%);
+        opacity: 0.12;
+    }
+
+    /* -- Card — light glass -> white with purple shadow -- */
+    .login_modern_container .card,
+    .login_modern_container .o_database_list {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(16px) saturate(120%);
+        -webkit-backdrop-filter: blur(16px) saturate(120%);
+        border: 1px solid rgba(113, 99, 158, 0.15) !important;
+        border-radius: 20px !important;
+        box-shadow:
+            0 8px 40px rgba(113, 99, 158, 0.12),
+            0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+    }
+
+    .login_modern_container .card:hover,
+    .login_modern_container .o_database_list:hover {
+        box-shadow:
+            0 12px 50px rgba(113, 99, 158, 0.2),
+            0 0 60px -10px rgba(139, 92, 246, 0.15) !important;
+        border-color: rgba(139, 92, 246, 0.3) !important;
+    }
+
+    /* -- Card body -- */
+    .login_modern_container .card-body {
+        background: transparent !important;
+    }
+
+    /* -- Text color — dark for light bg -- */
+    .login_modern_container .card,
+    .login_modern_container .o_database_list,
+    .login_modern_container .card .card-body,
+    .login_modern_container .o_database_list .card-body {
+        color: #2d2440 !important;
+    }
+
+    /* -- Labels -- */
+    .login_modern_container .form-label,
+    .login_modern_container label,
+    .login_modern_container .col-form-label {
+        color: #4a3f6b !important;
+    }
+
+    /* -- Inputs — light -- */
+    .login_modern_container .o_database_list input.form-control {
+        background: rgba(113, 99, 158, 0.05) !important;
+        border: 1px solid rgba(113, 99, 158, 0.2) !important;
+        color: #2d2440 !important;
+    }
+
+    .login_modern_container .o_database_list input.form-control::placeholder {
+        color: rgba(113, 99, 158, 0.4);
+    }
+
+    .login_modern_container .o_database_list input.form-control:focus {
+        background: rgba(113, 99, 158, 0.08) !important;
+        border-color: rgba(139, 92, 246, 0.5) !important;
+        box-shadow:
+            0 0 0 3px rgba(139, 92, 246, 0.12),
+            0 0 20px -5px rgba(139, 92, 246, 0.15) !important;
+    }
+
+    /* -- Form background -- */
+    .login_modern_container .o_database_list form,
+    .login_modern_container .o_database_list .oe_login_form,
+    .login_modern_container .o_database_list .oe_signup_form,
+    .login_modern_container .o_database_list .oe_reset_password_form {
+        background: rgba(113, 99, 158, 0.03) !important;
+        border: 1px solid rgba(113, 99, 158, 0.08) !important;
+        box-shadow: 0 2px 12px rgba(113, 99, 158, 0.08) !important;
+    }
+
+    /* -- Primary button — light mode -- */
+    .login_modern_container .o_database_list .btn-primary,
+    .login_modern_container .o_database_list button[type="submit"] {
+        color: #fff !important;
+        box-shadow:
+            0 4px 20px rgba(139, 92, 246, 0.3),
+            0 1px 0 rgba(255, 255, 255, 0.2) inset !important;
+    }
+
+    /* -- Links -- */
+    .login_modern_container .o_database_list .btn-link {
+        color: #6366f1 !important;
+    }
+
+    .login_modern_container .o_database_list .btn-link:hover {
+        color: #8b5cf6 !important;
+    }
+
+    .login_modern_container .o_database_list .btn-link::after {
+        background: rgba(139, 92, 246, 0.5);
+    }
+
+    /* -- Footer links -- */
+    .login_modern_container .o_database_list .card-body .text-center.small a {
+        color: rgba(74, 63, 107, 0.55);
+    }
+
+    .login_modern_container .o_database_list .card-body .text-center.small a:hover {
+        color: #4a3f6b;
+    }
+
+    /* -- Alerts -- */
+    .login_modern_container .o_database_list .alert {
+        background: rgba(239, 68, 68, 0.06);
+        border: 1px solid rgba(239, 68, 68, 0.15);
+        color: #dc2626;
+    }
+
+    .login_modern_container .o_database_list .alert-success {
+        background: rgba(16, 185, 129, 0.06);
+        border: 1px solid rgba(16, 185, 129, 0.15);
+        color: #059669;
+    }
+
+    /* -- Borders -- */
+    .login_modern_container .o_database_list .border-top {
+        border-top-color: rgba(113, 99, 158, 0.12) !important;
+    }
+
+    .login_modern_container .o_database_list .card-body > .text-center.pb-3 {
+        border-bottom-color: rgba(113, 99, 158, 0.12) !important;
+    }
+
+    /* -- Logo -- */
+    .login_modern_container .o_database_list .card-body img[alt="Logo"] {
+        filter: drop-shadow(0 0 12px rgba(113, 99, 158, 0.1));
+    }
+
+    /* -- Form: input group (password eye toggle) -- */
+    .login_modern_container .o_database_list .input-group .btn,
+    .login_modern_container .o_database_list .input-group .o_show_password {
+        background: rgba(113, 99, 158, 0.05) !important;
+        border-color: rgba(113, 99, 158, 0.2) !important;
+        color: rgba(113, 99, 158, 0.5) !important;
+    }
+    .login_modern_container .o_database_list .input-group .btn:hover,
+    .login_modern_container .o_database_list .input-group .o_show_password:hover {
+        color: #8b5cf6 !important;
+        background: rgba(139, 92, 246, 0.08) !important;
+    }
+
+    /* -- Form: select dropdown -- */
+    .login_modern_container .o_database_list select.form-control,
+    .login_modern_container .o_database_list select.form-select {
+        background-color: rgba(113, 99, 158, 0.05) !important;
+        border-color: rgba(113, 99, 158, 0.2) !important;
+        color: #2d2440 !important;
+    }
+
+    /* -- Form: heading -- */
+    .login_modern_container .o_database_list .oe_login_form h3,
+    .login_modern_container .o_database_list .oe_signup_form h3,
+    .login_modern_container .o_database_list .oe_reset_password_form h3 {
+        color: #2d2440 !important;
+    }
+
+    /* -- Custom form elements light -- */
+    .login_glass_form {
+        background: rgba(255, 255, 255, 0.55) !important;
+        background-color: rgba(255, 255, 255, 0.55) !important;
+        border: 1px solid rgba(113, 99, 158, 0.12) !important;
+        box-shadow:
+            0 8px 40px rgba(113, 99, 158, 0.08),
+            0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+            0 0 60px -15px rgba(139, 92, 246, 0.06) !important;
+        backdrop-filter: blur(20px) saturate(150%);
+        -webkit-backdrop-filter: blur(20px) saturate(150%);
+    }
+    .login_glass_form::before {
+        background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(139, 92, 246, 0.08) 20%,
+            rgba(139, 92, 246, 0.12) 50%,
+            rgba(139, 92, 246, 0.08) 80%,
+            transparent 100%);
+    }
+    .login_glass_form::after {
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(139, 92, 246, 0.12),
+            transparent);
+    }
+    .login_heading { color: #2d2440 !important; }
+    .login_subtitle { color: rgba(74, 63, 107, 0.5) !important; }
+    .login_input_wrapper {
+        background: rgba(113, 99, 158, 0.04);
+        border-color: rgba(113, 99, 158, 0.15);
+    }
+    .login_input_wrapper:focus-within {
+        border-color: rgba(139, 92, 246, 0.5);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        background: rgba(113, 99, 158, 0.06);
+    }
+    .login_input_icon { color: rgba(74, 63, 107, 0.35); }
+    .login_input_wrapper:focus-within .login_input_icon { color: #8b5cf6; }
+    .login_input_field { color: #2d2440 !important; }
+    .login_input_field::placeholder { color: rgba(74, 63, 107, 0.3); }
+    .login_eye_btn { color: rgba(74, 63, 107, 0.35) !important; }
+    .login_eye_btn:hover { color: #8b5cf6 !important; background: rgba(139, 92, 246, 0.06) !important; }
+    .login_db_btn {
+        background: rgba(139, 92, 246, 0.1) !important;
+        border-color: rgba(139, 92, 246, 0.2) !important;
+        color: #6366f1 !important;
+    }
+    .login_db_btn:hover { background: rgba(139, 92, 246, 0.2) !important; color: #4f45e5 !important; }
+    .login_submit_btn {
+        color: #fff !important;
+        box-shadow: 0 4px 20px rgba(6, 182, 212, 0.25) !important;
+    }
+    .login_alert_glass {
+        background: rgba(239, 68, 68, 0.06) !important;
+        border-color: rgba(239, 68, 68, 0.15) !important;
+        color: #dc2626 !important;
+    }
+    .login_alert_glass.alert-success {
+        background: rgba(16, 185, 129, 0.06) !important;
+        border-color: rgba(16, 185, 129, 0.15) !important;
+        color: #059669 !important;
+    }
+    .login_separator::before,
+    .login_separator::after { background: rgba(113, 99, 158, 0.12); }
+    .login_separator span { color: rgba(74, 63, 107, 0.4); }
+}
+
+/* ============================================================
+   FORM BASE STYLING — Desktop
+   ============================================================ */
+.oe_login_form {
+    max-width: 600px !important;
+    background: #ffffff !important;
+    padding: 40px !important;
+    border-radius: 25px !important;
+    box-shadow: 0 12px 60px rgba(0, 0, 0, 0.25) !important;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Dark mode override — subtle glass instead of white */
+@media (prefers-color-scheme: dark) {
+    .oe_login_form {
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE — tablets & phones
+   ============================================================ */
+@media (max-width: 768px) {
+    .oe_login_form {
+        max-width: 92% !important;
+        padding: 28px 20px !important;
+        border-radius: 20px !important;
+    }
+    /* Reduce card max-width on mobile */
+    .login_modern_container .card,
+    .login_modern_container .o_database_list {
+        max-width: 100% !important;
+    }
+    /* Smaller heading */
+    .login_heading {
+        font-size: 1.15rem !important;
+    }
+    /* Tighter form wrapper */
+    .login_input_wrapper {
+        border-radius: 10px;
+    }
+    .login_input_field {
+        padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+        font-size: 0.9rem !important;
+    }
+    .login_submit_btn {
+        padding: 0.7rem 1.5rem !important;
+        font-size: 0.95rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .oe_login_form {
+        max-width: 96% !important;
+        padding: 22px 15px !important;
+        border-radius: 16px !important;
+    }
+    /* Even smaller on very small screens */
+    .login_heading {
+        font-size: 1.05rem !important;
+    }
+    .login_subtitle {
+        font-size: 0.78rem !important;
+    }
+    .login_input_field {
+        padding: 0.7rem 0.9rem 0.7rem 2.3rem !important;
+        font-size: 0.85rem !important;
+    }
+    .login_input_icon {
+        left: 0.75rem;
+        font-size: 0.8rem;
+    }
+    .login_eye_btn {
+        right: 0.3rem;
+        padding: 0.3rem 0.5rem;
+    }
+    .login_submit_btn {
+        padding: 0.65rem 1.25rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 10px !important;
+    }
+}
