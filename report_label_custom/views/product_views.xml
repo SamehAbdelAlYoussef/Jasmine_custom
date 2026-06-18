@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The "Print Label" report is accessible via the Print menu -->
+    <!-- The binding_type="report" on the action adds it to the Print dropdown -->
+</odoo>

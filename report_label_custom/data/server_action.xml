@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="seq_product_template_barcode" model="ir.sequence">
+        <field name="name">Product Barcode Sequence</field>
+        <field name="code">product.template.barcode</field>
+        <field name="padding">8</field>
+        <field name="number_next">11000001</field>
+        <field name="number_increment">1</field>
+    </record>
+
+</odoo>

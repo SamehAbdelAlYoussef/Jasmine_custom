@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_stock_label_custom" model="ir.actions.report">
+        <field name="name">Product Label (PDF) custom</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">report_label_custom.template_report_stock_label_custom</field>
+        <field name="report_file">report_label_custom.template_report_stock_label_custom</field>
+        <field name="paperformat_id" ref="report_label_custom.paperformat_product_label"/>
+        <field name="print_report_name">'Products Labels - %s' % (object.name)</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="template_report_stock_label_custom">
+        <t t-call="web.html_container">
+            <t t-call="web.basic_layout">
+                <t t-foreach="docs" t-as="doc">
+                    <t t-foreach="doc.move_ids" t-as="line">
+                        <t t-foreach="range(int(line.quantity_done or 0))" t-as="q">
+                            <div class="page" style="page-break-after: always;">
+                                <div class="row">
+                                    <div class="col" style="text-align: left;">
+                                        <div t-field="line.product_id.barcode"
+                                             t-options="{'widget': 'barcode', 'width': 600, 'height': 100, 'img_style': 'width:180px;height:25px;margin-left: -45px;'}"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col" style="font-size: 12px;text-align: center;">
+                                        <t t-esc="line.product_id.barcode"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col" style="text-align: center;font-size: 12px;">
+                                        <t t-esc="line.product_id.name"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col" style="text-align: right;font-size: 12px;margin-left:16px;margin-top:10px;">
+                                        <t t-esc="line.product_id.list_price" t-options='{"widget": "float", "precision": 2}'/>
+                                        <t t-esc="line.product_id.currency_id.symbol"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </t>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

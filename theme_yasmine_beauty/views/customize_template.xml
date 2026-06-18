@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Nuclear cleanup: delete ALL yasmine-related views from DB -->
+<!--    <delete model="ir.ui.view" search="[('name','ilike','%yasmine%')]"/>-->
+<!--    <delete model="ir.ui.view" search="[('name','ilike','%Yasmine%')]"/>-->
+<!--    &lt;!&ndash; Also reset the website.homepage base view to factory default &ndash;&gt;-->
+<!--    <delete model="ir.ui.view" search="[('inherit_id.name','=','website.homepage')]"/>-->
+
+<!--    &lt;!&ndash; Update website: set name + hide default footer &ndash;&gt;-->
+<!--&lt;!&ndash;    <record id="website.default_website" model="website">&ndash;&gt;-->
+<!--&lt;!&ndash;        <field name="name">Yasmine Beauty Bar</field>&ndash;&gt;-->
+<!--&lt;!&ndash;        <field name="footer_visible" eval="False"/>&ndash;&gt;-->
+<!--    </record>-->
+
+</odoo>

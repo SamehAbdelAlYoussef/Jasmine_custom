@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Yasmine Beauty Bar — Full Homepage Design -->
+    <template id="inherit_home" inherit_id="website.homepage" name="Home">
+        <xpath expr="//div[@id='wrap']" position="replace">
+
+            <!-- Inline CSS — Full theme styles -->
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&amp;family=El+Messiri:wght@500;600;700&amp;family=Almarai:wght@300;400;700&amp;display=swap');
+                :root { --yb-rose: #C4956A; --yb-dark: #1A1A1A; --yb-cream: #FDF8F5; }
+                body { font-family: 'Almarai','Cairo',sans-serif; }
+                h1,h2,h3,h4 { font-family: 'El Messiri','Cairo',serif; font-weight:600; }
+
+                /* Hero */
+                .yb_hero { min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; background:linear-gradient(135deg,#FDF8F5 0%,#F0E0D6 40%,#E8D5C4 100%); }
+                /* Animated floating particles */
+                .yb_particles { position:absolute; inset:0; z-index:3; overflow:hidden; pointer-events:none; }
+                .yb_particles::before, .yb_particles::after {
+                    content:''; position:absolute; width:6px; height:6px;
+                    border-radius:50%; opacity:0.4;
+                    animation:yb_drift 18s ease-in-out infinite alternate;
+                }
+                .yb_particles::before {
+                    background:#C4956A;
+                    box-shadow:60px 40px 0 2px #D4A574, 140px 100px 0 0 #fff, 220px 180px 0 1px #C4956A,
+                              300px 50px 0 0 #B8956A, 380px 150px 0 2px #F0E0D6, 460px 280px 0 -1px #C4956A,
+                              540px 90px 0 1px #D4A574, 620px 210px 0 0 #fff, 700px 60px 0 2px #C4956A,
+                              780px 170px 0 -1px #B8956A, 120px 320px 0 0 #D4A574, 260px 400px 0 1px #C4956A,
+                              400px 360px 0 2px #fff, 520px 440px 0 0 #F0E0D6, 660px 380px 0 -1px #C4956A,
+                              820px 460px 0 1px #D4A574, 180px 520px 0 0 #B8956A, 340px 480px 0 2px #fff;
+                }
+                .yb_particles::after {
+                    background:#D4A574;
+                    box-shadow:80px 70px 0 1px #C4956A, 180px 130px 0 0 #fff, 280px 60px 0 2px #B8956A,
+                              360px 260px 0 -1px #D4A574, 440px 110px 0 0 #F0E0D6, 520px 330px 0 1px #C4956A,
+                              600px 190px 0 2px #fff, 680px 270px 0 -1px #C4956A, 760px 90px 0 0 #D4A574,
+                              840px 350px 0 1px #B8956A, 100px 500px 0 2px #C4956A, 240px 540px 0 0 #fff,
+                              380px 520px 0 -1px #D4A574, 500px 480px 0 1px #C4956A, 640px 560px 0 2px #F0E0D6,
+                              800px 540px 0 0 #B8956A, 160px 600px 0 -1px #fff, 420px 580px 0 1px #C4956A;
+                    animation-delay:-6s; animation-duration:22s;
+                }
+                /* Section reveal animation */
+                .yb_about, .yb_categories, .yb_brands, .yb_cta {
+                    animation:yb_fadein 0.8s ease backwards;
+                }
+                .yb_about { animation-delay:0.1s; }
+                .yb_categories { animation-delay:0.2s; }
+                .yb_brands { animation-delay:0.3s; }
+                .yb_cta { animation-delay:0.4s; }
+                @keyframes yb_fadein {
+                    from { opacity:0; transform:translateY(40px); }
+                    to { opacity:1; transform:translateY(0); }
+                }
+
+                @keyframes yb_drift {
+                    0% { transform:translate(0,0) scale(1); }
+                    25% { transform:translate(30px,-30px) scale(1.3); }
+                    50% { transform:translate(-20px,-60px) scale(0.7); }
+                    75% { transform:translate(40px,-20px) scale(1.2); }
+                    100% { transform:translate(-30px,-80px) scale(0.9); }
+                }
+                .yb_hero::before { content:''; position:absolute; top:-30%; right:-15%; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(196,149,106,0.15) 0%,transparent 70%); z-index:1; }
+                .yb_hero::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(253,248,245,.6) 0%,rgba(240,224,214,.7) 100%); z-index:2; }
+                .yb_hero_content { position:relative; z-index:4; max-width:700px; padding:0 20px; }
+                .yb_hero h1 { font-size:3.5rem; color:#1A1A1A; line-height:1.2; }
+                .yb_hero h1 span { color:#C4956A; }
+                .yb_hero p { font-size:1.15rem; color:#6B6B6B; margin:1rem 0 2rem; line-height:1.7; }
+                .yb_btn_primary { background:linear-gradient(135deg,#C4956A,#D4A574)!important; color:#fff!important; border:none!important; border-radius:30px!important; padding:0.85rem 2.5rem!important; font-weight:600; box-shadow:0 8px 30px rgba(196,149,106,0.3); transition:transform .3s,box-shadow .3s; }
+                .yb_btn_primary:hover { transform:translateY(-3px); box-shadow:0 12px 40px rgba(196,149,106,0.45); }
+                .yb_btn_outline { background:transparent!important; color:#C4956A!important; border:2px solid #C4956A!important; border-radius:30px!important; padding:0.65rem 2rem!important; font-weight:600; transition:all .3s; }
+                .yb_btn_outline:hover { background:#C4956A!important; color:#fff!important; }
+
+                /* About */
+                .yb_about { padding:80px 0; background:#fff; }
+                .yb_about h2 { font-size:2.5rem; color:#1A1A1A; }
+                .yb_about h2 span { color:#C4956A; }
+                .yb_about p { color:#6B6B6B; font-size:1.05rem; line-height:1.8; }
+                .yb_about_image { height:400px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FDF8F5,#F0E0D6); border-radius:20px; position:relative; overflow:hidden; }
+                .yb_about_image::before { content:''; position:absolute; width:4px; height:4px; border-radius:50%; background:#C4956A; opacity:0.2; animation:yb_about_float 12s ease-in-out infinite; box-shadow:40px 30px 0 0 #D4A574, 80px 60px 0 1px #fff, 120px 100px 0 -1px #C4956A, 160px 40px 0 0 #B8956A, 200px 80px 0 2px #F0E0D6, 250px 120px 0 0 #C4956A, 50px 150px 0 -1px #D4A574, 100px 180px 0 1px #fff, 150px 50px 0 0 #C4956A, 200px 170px 0 2px #B8956A, 300px 100px 0 -1px #D4A574, 80px 220px 0 0 #fff, 180px 250px 0 1px #C4956A, 280px 200px 0 -1px #F0E0D6, 220px 280px 0 0 #D4A574, 320px 250px 0 2px #C4956A, 120px 300px 0 0 #fff, 280px 300px 0 -1px #B8956A; }
+                .yb_about_image::after { content:''; position:absolute; width:6px; height:6px; border-radius:50%; background:#D4A574; opacity:0.15; animation:yb_about_float 15s ease-in-out infinite -5s; box-shadow:30px 50px 0 0 #fff, 70px 90px 0 1px #C4956A, 110px 20px 0 -1px #B8956A, 150px 130px 0 0 #D4A574, 190px 60px 0 2px #C4956A, 230px 160px 0 0 #F0E0D6, 270px 40px 0 -1px #fff, 310px 140px 0 0 #C4956A, 60px 200px 0 2px #D4A574, 140px 260px 0 0 #fff, 260px 220px 0 -1px #C4956A, 340px 180px 0 1px #B8956A; }
+                @keyframes yb_about_float { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(15px,-20px) scale(1.2); } }
+
+                /* Categories */
+                .yb_categories { padding:80px 0; background:#FDF8F5; }
+                .yb_categories h2 { text-align:center; font-size:2.5rem; color:#1A1A1A; margin-bottom:3rem; }
+                .yb_cat_card { background:#fff; border-radius:20px; padding:2rem 1.5rem; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,.04); transition:transform .3s,box-shadow .3s; height:100%; }
+                .yb_cat_card:hover { transform:translateY(-5px); box-shadow:0 12px 40px rgba(196,149,106,.12); }
+                .yb_cat_icon { width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg,#C4956A,#E8D5C4); display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; color:#fff; font-size:1.5rem; }
+                .yb_cat_card h4 { font-size:1.1rem; color:#1A1A1A; margin-bottom:.5rem; }
+                .yb_cat_card p { font-size:.85rem; color:#999; }
+
+                /* Brands */
+                .yb_brands { padding:80px 0; background:#fff; }
+                .yb_brands h2 { text-align:center; font-size:2.5rem; color:#1A1A1A; margin-bottom:3rem; }
+                .yb_brand_item { padding:1.5rem; border-radius:16px; background:#FDF8F5; transition:background .3s; }
+                .yb_brand_item:hover { background:#F0E0D6; }
+
+                /* CTA */
+                .yb_cta { padding:100px 0; background:linear-gradient(135deg,#C4956A,#B8956A); }
+                .yb_cta h2 { font-size:2.5rem; color:#fff; }
+                .yb_cta p { font-size:1.1rem; color:rgba(255,255,255,.9); margin-bottom:2rem; }
+                .yb_btn_white { background:#fff!important; color:#C4956A!important; border:none!important; border-radius:30px!important; padding:0.85rem 2.5rem!important; font-weight:600; }
+
+                /* Footer */
+                .yb_footer { background:#1A1A1A; color:rgba(255,255,255,.7); padding:60px 0 30px; }
+                .yb_footer h5 { color:#fff; font-size:1.1rem; margin-bottom:1.25rem; }
+                .yb_footer a { color:rgba(255,255,255,.6); text-decoration:none; transition:color .3s; }
+                .yb_footer a:hover { color:#C4956A; }
+                .yb_footer_bottom { border-top:1px solid rgba(255,255,255,.08); padding-top:20px; margin-top:40px; text-align:center; font-size:.85rem; color:rgba(255,255,255,.4); }
+                .yb_social a { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.06); margin-right:8px; color:rgba(255,255,255,.6); transition:all .3s; }
+                .yb_social a:hover { background:#C4956A; color:#fff; }
+
+                @media (max-width:768px) {
+                    .yb_hero h1 { font-size:2.2rem; }
+                    .yb_about h2, .yb_categories h2, .yb_brands h2, .yb_cta h2 { font-size:1.8rem; }
+                    .yb_about, .yb_categories, .yb_brands { padding:50px 0; }
+                    .yb_cta { padding:60px 0; }
+                }
+            </style>
+
+            <!-- ============================================================
+                 HERO — Full Screen Brand Intro
+                 ============================================================ -->
+            <section class="yb_hero">
+                <!-- Animated particles container -->
+                <div class="yb_particles" data-particles="true"></div>
+                <div class="yb_hero_content">
+                    <h1><span>Yasmine</span> Beauty Bar</h1>
+                    <p>100% Authentic Korean &amp; Arabian Beauty — Premium Skincare, Hair Care, Body Care, Makeup &amp; Fragrances. Shipping all over Egypt.</p>
+                    <a href="/contactus" class="btn btn-lg yb_btn_primary">Shop Now <i class="fa fa-arrow-right ms-2"/></a>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ABOUT
+                 ============================================================ -->
+            <section class="yb_about" id="about">
+                <div class="container">
+                    <div class="row align-items-center">
+                        <div class="col-lg-6 mb-4 mb-lg-0">
+                            <h2>About <span>Yasmine Beauty</span></h2>
+                            <p>Yasmine Beauty Bar is your destination for premium Korean skincare and authentic Arabian fragrances in Egypt. We curate the finest beauty products from top brands like <strong>COSRX, Anua, SKIN1004, SOME BY MI, Medicube</strong>, and Arabian perfume houses like <strong>Arabiyat Prestige</strong> and <strong>Ibrahim Alqurashi</strong>.</p>
+                            <p>Every product is 100% authentic and guaranteed. Fast delivery across Egypt within 1-3 days, with free samples on qualifying orders.</p>
+                            <a href="/contactus" class="btn yb_btn_outline">Explore Products</a>
+                        </div>
+                        <div class="col-lg-6 text-center">
+                            <div class="yb_about_image">
+                                <i class="fa fa-diamond fa-5x" style="color:#C4956A;opacity:0.4;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 CATEGORIES — 6 Cards Grid
+                 ============================================================ -->
+            <section class="yb_categories" id="categories">
+                <div class="container">
+                    <h2>Shop by Category</h2>
+                    <div class="row g-4">
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a href="/contactus" class="text-decoration-none">
+                                <div class="yb_cat_card"><div class="yb_cat_icon"><i class="fa fa-star"/></div><h4>Skincare</h4><p>Serums &amp; moisturizers</p></div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a href="/contactus" class="text-decoration-none">
+                                <div class="yb_cat_card"><div class="yb_cat_icon"><i class="fa fa-scissors"/></div><h4>Hair Care</h4><p>Oils &amp; treatments</p></div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a href="/contactus" class="text-decoration-none">
+                                <div class="yb_cat_card"><div class="yb_cat_icon"><i class="fa fa-leaf"/></div><h4>Body Care</h4><p>Scrubs &amp; oils</p></div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a href="/contactus" class="text-decoration-none">
+                                <div class="yb_cat_card"><div class="yb_cat_icon"><i class="fa fa-paint-brush"/></div><h4>Makeup</h4><p>Foundations &amp; more</p></div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a href="/contactus" class="text-decoration-none">
+                                <div class="yb_cat_card"><div class="yb_cat_icon"><i class="fa fa-gem"/></div><h4>Fragrances</h4><p>Arabian perfumes</p></div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a href="/contactus" class="text-decoration-none">
+                                <div class="yb_cat_card"><div class="yb_cat_icon"><i class="fa fa-gift"/></div><h4>Gift Sets</h4><p>Curated collections</p></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 BRANDS
+                 ============================================================ -->
+            <section class="yb_brands" id="brands">
+                <div class="container">
+                    <h2>Top Brands We Carry</h2>
+                    <div class="row g-3 text-center">
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>COSRX</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>Anua</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>SKIN1004</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>SOME BY MI</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>Medicube</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>TIRTIR</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>Arabiyat Prestige</strong></div></div>
+                        <div class="col-6 col-md-3"><div class="yb_brand_item"><strong>Ibrahim Alqurashi</strong></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 CTA — Call to Action
+                 ============================================================ -->
+            <section class="yb_cta" id="cta">
+                <div class="container text-center">
+                    <h2>Ready to Glow?</h2>
+                    <p>Join thousands of beauty lovers in Egypt — discover authentic Korean skincare and Arabian fragrances delivered to your doorstep.</p>
+                    <a href="/contactus" class="btn btn-lg yb_btn_white">Start Shopping <i class="fa fa-arrow-right ms-2"/></a>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 FOOTER
+                 ============================================================ -->
+            <footer class="yb_footer">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-4 mb-4 mb-lg-0">
+                            <h5>Yasmine Beauty Bar</h5>
+                            <p>Premium Korean &amp; Arabian beauty products. 100% authentic, delivered across Egypt.</p>
+                            <div class="yb_social mt-3">
+                                <a href="https://facebook.com/share/1Bvuaihyfn/" target="_blank" aria-label="Facebook"><i class="fa fa-facebook"/></a>
+                                <a href="https://instagram.com/yasminebeautybar" target="_blank" aria-label="Instagram"><i class="fa fa-instagram"/></a>
+                                <a href="https://tiktok.com/@yasminebeautybar" target="_blank" aria-label="TikTok"><i class="fa fa-music"/></a>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                            <h5>Shop</h5>
+                            <div><a href="/contactus">Skincare</a></div>
+                            <div><a href="/contactus">Hair Care</a></div>
+                            <div><a href="/contactus">Body Care</a></div>
+                            <div><a href="/contactus">Makeup</a></div>
+                            <div><a href="/contactus">Fragrances</a></div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                            <h5>Support</h5>
+                            <div><a href="/contactus">Contact Us</a></div>
+                            <div><a href="/contactus">My Cart</a></div>
+                            <div><a href="/my/account">My Account</a></div>
+                        </div>
+                        <div class="col-lg-4 col-md-4">
+                            <h5>Contact</h5>
+                            <p><i class="fa fa-envelope me-2"/> info@yasminebeautybar.com</p>
+                            <p><i class="fa fa-map-marker me-2"/> Egypt — Shipping nationwide</p>
+                            <p><i class="fa fa-truck me-2"/> Fast delivery 1-3 days</p>
+                        </div>
+                    </div>
+                    <div class="yb_footer_bottom">
+                        &#169; 2026 Yasmine Beauty Bar. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+
+        </xpath>
+    </template>
+
+</odoo>

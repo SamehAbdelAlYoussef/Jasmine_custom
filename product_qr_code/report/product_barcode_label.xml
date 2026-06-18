@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Barcode Label Report Template -->
+    <template id="report_product_barcode_label">
+        <t t-foreach="docs" t-as="product">
+            <t t-set="barcode" t-value="product.barcode or ''"/>
+            <div class="o_label_full" style="width:97mm;height:37mm;padding:4px;text-align:center;border:1px solid #ddd;">
+                <div style="font-size:11px;font-weight:bold;margin-bottom:4px;">
+                    <t t-esc="product.display_name"/>
+                </div>
+                <div t-if="barcode" style="margin:4px 0;">
+                    <div t-out="barcode" style="width:100%;height:20mm;"
+                         t-options="{'widget': 'barcode', 'symbology': 'auto'}"/>
+                </div>
+                <div t-if="barcode" style="font-size:10px;font-family:monospace;">
+                    <t t-esc="barcode"/>
+                </div>
+                <div style="font-size:9px;color:#666;">
+                    <t t-esc="product.default_code or ''"/>
+                </div>
+            </div>
+            <t t-if="not product_last">
+                <p style="page-break-after:always;"/>
+            </t>
+        </t>
+    </template>
+
+</odoo>

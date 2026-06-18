@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         LOGIN — Same design as Yasmine Beauty Homepage
+         Warm rose-gold aesthetic, gradient bg, matching fonts
+         ============================================================ -->
+
+    <!-- Inject matching CSS via website login layout -->
+    <template id="yasmine_login_css"
+              inherit_id="website.login_layout"
+              name="Yasmine Login CSS">
+        <xpath expr="//div[hasclass('oe_website_login_container')]" position="before">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;700&amp;family=Almarai:wght@400&amp;display=swap');
+                body { font-family:'Almarai',sans-serif; background:linear-gradient(135deg,#FDF8F5 0%,#F0E0D6 40%,#E8D5C4 100%)!important; min-height:100vh; position:relative; overflow-x:hidden; }
+                /* Animated background particles */
+                .yb_bg_particles { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+                .yb_bg_particles::before, .yb_bg_particles::after {
+                    content:''; position:absolute; width:6px; height:6px;
+                    border-radius:50%; opacity:0.18;
+                    animation:yb_drift 20s ease-in-out infinite alternate;
+                }
+                .yb_bg_particles::before {
+                    background:#C4956A;
+                    box-shadow:60px 80px 0 1px #D4A574, 140px 200px 0 -1px #fff, 220px 50px 0 0 #C4956A,
+                              300px 160px 0 2px #B8956A, 380px 300px 0 0 #F0E0D6, 460px 100px 0 -1px #C4956A,
+                              540px 250px 0 1px #D4A574, 620px 80px 0 0 #fff, 700px 300px 0 2px #C4956A,
+                              780px 150px 0 -1px #B8956A, 860px 400px 0 1px #D4A574, 100px 350px 0 0 #C4956A,
+                              260px 450px 0 2px #fff, 420px 380px 0 -1px #C4956A, 580px 500px 0 0 #F0E0D6,
+                              740px 420px 0 1px #D4A574, 880px 520px 0 -1px #C4956A, 180px 550px 0 2px #B8956A;
+                }
+                .yb_bg_particles::after {
+                    background:#D4A574;
+                    box-shadow:120px 120px 0 0 #C4956A, 200px 60px 0 2px #F0E0D6, 280px 280px 0 1px #fff,
+                              360px 180px 0 -1px #D4A574, 440px 80px 0 0 #C4956A, 520px 350px 0 2px #B8956A,
+                              600px 200px 0 -1px #fff, 680px 400px 0 0 #C4956A, 760px 60px 0 1px #D4A574,
+                              840px 320px 0 -1px #F0E0D6, 920px 180px 0 2px #C4956A, 80px 480px 0 0 #fff,
+                              240px 520px 0 1px #C4956A, 400px 480px 0 -1px #B8956A, 560px 560px 0 0 #D4A574,
+                              720px 540px 0 2px #C4956A, 160px 600px 0 0 #fff, 500px 600px 0 -1px #C4956A;
+                    animation-delay:-7s; animation-duration:24s;
+                }
+                .yb_login_wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px; position:relative; z-index:1; }
+                .yb_login_card { width:100%; max-width:420px; background:#fff; border-radius:20px; padding:40px; box-shadow:0 20px 60px rgba(196,149,106,0.15); }
+                .yb_card_small { padding:22px 40px; margin-top:16px; text-align:center; }
+                .yb_login_logo { text-align:center; margin-bottom:32px; }
+                .yb_login_logo span { font-family:'El Messiri',serif; font-size:1.6rem; font-weight:700; color:#1A1A1A; }
+                .yb_login_logo span em { color:#C4956A; font-style:normal; }
+                .yb_input_group { margin-bottom:14px; }
+                .yb_input { width:100%; padding:12px 16px; font-size:14px; background:#FDF8F5; border:1px solid #E8D5C4; border-radius:12px; color:#1A1A1A; outline:none; transition:border .3s,box-shadow .3s; box-sizing:border-box; }
+                .yb_input:focus { border-color:#C4956A; box-shadow:0 0 0 3px rgba(196,149,106,0.1); }
+                .yb_input::placeholder { color:#B8956A; }
+                .yb_password_wrap { position:relative; }
+                .yb_password_wrap .yb_input { padding-right:55px; }
+                .yb_show_btn { position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#C4956A; font-size:13px; font-weight:600; cursor:pointer; }
+                .yb_submit_btn { width:100%; padding:12px; background:linear-gradient(135deg,#C4956A,#D4A574); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; margin:20px 0 16px; box-shadow:0 8px 24px rgba(196,149,106,0.3); transition:transform .2s,box-shadow .3s; }
+                .yb_submit_btn:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(196,149,106,0.4); }
+                .yb_divider { display:flex; align-items:center; gap:16px; margin:16px 0; }
+                .yb_divider::before,.yb_divider::after { content:''; flex:1; height:1px; background:#E8D5C4; }
+                .yb_divider span { color:#B8956A; font-size:12px; font-weight:600; }
+                .yb_alt_link { text-align:center; margin-top:20px; font-size:14px; color:#6B6B6B; }
+                .yb_alt_link a { color:#C4956A; font-weight:600; text-decoration:none; }
+                .yb_alt_link a:hover { color:#B07E4E; }
+                .yb_alert_err { background:#FFF0F0; border:1px solid #FFD0D0; border-radius:10px; padding:10px 14px; color:#CC0000; font-size:13px; margin-top:12px; text-align:center; }
+                .yb_alert_ok { background:#F0FFF0; border:1px solid #D0FFD0; border-radius:10px; padding:10px 14px; color:#006600; font-size:13px; margin-top:12px; text-align:center; }
+                /* Signup password fields */
+                .oe_signup_form .field-password { margin-bottom:14px; }
+                .oe_signup_form .field-password .form-label { display:none; }
+                .oe_signup_form .input-group .form-control { width:100%; padding:12px 16px; font-size:14px; background:#FDF8F5; border:1px solid #E8D5C4; border-radius:12px 0 0 12px; color:#1A1A1A; box-shadow:none; }
+                .oe_signup_form .input-group .o_show_password { background:#FDF8F5; border:1px solid #E8D5C4; border-left:none; border-radius:0 12px 12px 0; color:#C4956A; font-size:13px; font-weight:600; }
+                @keyframes yb_drift {
+                    0% { transform:translate(0,0) scale(1); }
+                    25% { transform:translate(30px,-30px) scale(1.3); }
+                    50% { transform:translate(-20px,-60px) scale(0.7); }
+                    75% { transform:translate(40px,-20px) scale(1.2); }
+                    100% { transform:translate(-30px,-80px) scale(0.9); }
+                }
+                @media (max-width:480px) { .yb_login_card { max-width:100%; padding:24px 20px; border-radius:16px; } }
+            </style>
+        </xpath>
+    </template>
+
+    <!-- Login Form — matching homepage design -->
+    <template id="yasmine_login_form"
+              inherit_id="web.login"
+              name="Yasmine Login Form">
+
+        <!-- Hide the original user switch (moved inside our card) -->
+        <xpath expr="//owl-component[@name='web.user_switch']" position="attributes">
+            <attribute name="class" add="d-none" separator=" "/>
+        </xpath>
+
+        <xpath expr="//form" position="replace">
+            <div class="yb_bg_particles"></div>
+            <div class="yb_login_wrap">
+                <div class="yb_login_card">
+                    <div class="yb_login_logo"><span><em>Yasmine</em> Beauty Bar</span></div>
+                    <owl-component t-if="not login" name="web.user_switch"/>
+                    <form t-attf-class="oe_login_form #{'' if login else 'd-none'}"
+                          role="form" t-attf-action="/web/login" method="post"
+                          onsubmit="this.action = '/web/login' + location.hash" data-captcha="login">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="yb_input_group" t-if="databases and len(databases) &gt; 1">
+                            <input type="text" name="db" t-att-value="request.db" id="db"
+                                   class="yb_input" required="required" readonly="readonly" placeholder="Database"/>
+                        </div>
+                        <div class="yb_input_group">
+                            <input type="text" placeholder="Email" name="login" t-att-value="login"
+                                   id="login" class="yb_input" required="required"
+                                   autocapitalize="off" autocomplete="username"/>
+                        </div>
+                        <div class="yb_input_group yb_password_wrap">
+                            <input type="password" placeholder="Password" name="password"
+                                   id="password" class="yb_input" required="required"
+                                   autocomplete="current-password"
+                                   t-att-autofocus="'autofocus' if login else None" maxlength="4096"/>
+                            <button type="button" class="yb_show_btn o_show_password">Show</button>
+                        </div>
+                        <button type="submit" class="yb_submit_btn">Log in</button>
+                        <div class="yb_divider"><span>or</span></div>
+                        <t t-call="web.login_oauth"/>
+                        <p class="yb_alert_err" t-if="error" role="alert"><t t-esc="error"/></p>
+                        <p class="yb_alert_ok" t-if="message" role="status"><t t-esc="message"/></p>
+                        <input type="hidden" name="type" value="password"/>
+                        <input type="hidden" name="redirect" t-att-value="redirect"/>
+                    </form>
+                    <div class="yb_alt_link">
+                        <a t-attf-href="/web/reset_password?{{ keep_query() }}" style="font-size:0.8rem;">Forgot password?</a>
+                    </div>
+                </div>
+                <!-- Second card — Sign up link -->
+                <div class="yb_login_card yb_card_small">
+                    <div class="yb_alt_link" style="margin-top:0;">
+                        Don't have an account? <a t-attf-href="/web/signup?{{ keep_query() }}">Sign up</a>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Signup Form — matching homepage design -->
+    <template id="yasmine_signup_form"
+              inherit_id="auth_signup.signup"
+              name="Yasmine Signup Form">
+        <xpath expr="//form" position="replace">
+            <div class="yb_bg_particles"></div>
+            <div class="yb_login_wrap">
+                <div class="yb_login_card">
+                    <div class="yb_login_logo"><span><em>Yasmine</em> Beauty Bar</span></div>
+                    <p style="text-align:center;color:#B8956A;font-size:14px;margin-bottom:24px;">
+                        Create your account
+                    </p>
+                    <form class="oe_signup_form" role="form" method="post"
+                          t-if="not message" data-captcha="signup">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="yb_input_group">
+                            <input type="text" name="name" t-att-value="name" id="name"
+                                   class="yb_input" placeholder="Full Name"
+                                   autofocus="autofocus" required="required"/>
+                        </div>
+                        <div class="yb_input_group">
+                            <input type="text" name="login" t-att-value="login" id="login"
+                                   class="yb_input" required="required" autocapitalize="off"
+                                   placeholder="Email"/>
+                        </div>
+                        <t t-call="auth_signup.fields"/>
+                        <p class="yb_alert_err" t-if="error" role="alert"><t t-esc="error"/></p>
+                        <input type="hidden" name="redirect" t-att-value="redirect"/>
+                        <input type="hidden" name="token" t-att-value="token"/>
+                        <button type="submit" class="yb_submit_btn">Sign up</button>
+                        <div class="yb_divider"><span>or</span></div>
+                        <t t-call="web.login_oauth"/>
+                    </form>
+                </div>
+                <!-- Second card — Login link -->
+                <div class="yb_login_card yb_card_small">
+                    <div class="yb_alt_link" style="margin-top:0;">
+                        Already have an account? <a t-attf-href="/web/login?{{ keep_query() }}">Log in</a>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

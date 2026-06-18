@@ -89,66 +89,6 @@
     </template>
 
     <!-- ============================================================
-         WEBSITE FRONTEND LOGIN LAYOUT
-         ============================================================ -->
-    <template id="login_redesign.website_layout"
-              inherit_id="website.login_layout"
-              name="Website Login Layout Redesign">
-
-        <xpath expr="//div[hasclass('oe_website_login_container')]" position="before">
-            <style>
-                body {
-                    background: #0f0c29 !important;
-                    background-color: #0f0c29 !important;
-                }
-                .oe_website_login_container.login_modern_container .card,
-                .oe_website_login_container.login_modern_container .o_database_list {
-                    background: rgba(255, 255, 255, 0.06) !important;
-                    color: #fff !important;
-                }
-                .oe_website_login_container.login_modern_container label,
-                .oe_website_login_container.login_modern_container .form-label {
-                    color: rgba(255, 255, 255, 0.9) !important;
-                }
-                .oe_website_login_container.login_modern_container .card-body {
-                    background: transparent !important;
-                }
-                @media (prefers-color-scheme: light) {
-                    body {
-                        background: #f5f3fa !important;
-                        background-color: #f5f3fa !important;
-                    }
-                    .oe_website_login_container.login_modern_container .card,
-                    .oe_website_login_container.login_modern_container .o_database_list {
-                        background: rgba(255, 255, 255, 0.85) !important;
-                        color: #2d2440 !important;
-                    }
-                    .oe_website_login_container.login_modern_container label,
-                    .oe_website_login_container.login_modern_container .form-label {
-                        color: #4a3f6b !important;
-                    }
-                }
-            </style>
-        </xpath>
-
-        <xpath expr="//div[hasclass('oe_website_login_container')]" position="before">
-            <div class="login_animated_bg"/>
-            <div class="login_floating_shapes">
-                <div class="login_shape login_shape_1"/>
-                <div class="login_shape login_shape_2"/>
-                <div class="login_shape login_shape_3"/>
-                <div class="login_shape login_shape_4"/>
-                <div class="login_shape login_shape_5"/>
-                <div class="login_shape login_shape_6"/>
-            </div>
-        </xpath>
-
-        <xpath expr="//div[hasclass('oe_website_login_container')]" position="attributes">
-            <attribute name="class" add="login_modern_container" separator=" "/>
-        </xpath>
-    </template>
-
-    <!-- ============================================================
          LOGIN FORM — glass bg + redesigned inputs + custom button
          ============================================================ -->
     <template id="login_redesign.login_form"

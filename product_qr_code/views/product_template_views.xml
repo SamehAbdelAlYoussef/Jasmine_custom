@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Clean up any previous broken view records -->
+    <delete model="ir.ui.view" search="[('name','ilike','product.template.form.inherit.qr')]"/>
+    <delete model="ir.ui.view" search="[('name','ilike','product.template.search.inherit.qr')]"/>
+    <delete model="ir.ui.view" search="[('name','ilike','product.template.tree.inherit.qr')]"/>
+
+    <!-- Product Form View — Barcode tab -->
+    <record id="view_product_template_form_inherit_qr" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.qr</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales']" position="after">
+                <page string="Barcode" name="barcode_tab" autofocus="autofocus">
+                    <group>
+                        <group string="Barcode">
+                            <field name="barcode" readonly="1"
+                                   invisible="barcode == False"/>
+                            <button name="action_generate_barcode"
+                                    type="object"
+                                    string="Generate Barcode"
+                                    class="btn btn-primary"
+                                    invisible="barcode != False"/>
+                            <button name="action_regenerate_barcode"
+                                    type="object"
+                                    string="Regenerate"
+                                    class="btn btn-secondary"
+                                    invisible="barcode == False"/>
+                        </group>
+                        <group string="Barcode Image"
+                               invisible="barcode == False">
+                            <div class="text-center">
+                                <field name="barcode_image" widget="image"
+                                       options="{'preview_image': 'barcode_image'}"
+                                       style="max-width:280px;max-height:70px;"/>
+                            </div>
+                        </group>
+                    </group>
+                    <separator string="Barcode Structure"/>
+                    <div class="alert alert-info" role="alert" style="margin-bottom:0;">
+                        <strong>Format:</strong> [Category Number] [Vendor Initials] [Sequence]
+                        <br/>
+                        <strong>Example:</strong> 01AN00001 = Category(01) + Vendor Al-Nahar(AN) + Seq(00001)
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product List View — add barcode column -->
+    <record id="view_product_template_tree_inherit_qr" model="ir.ui.view">
+        <field name="name">product.template.tree.inherit.qr</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="barcode" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Barcode Label Report Action -->
+    <record id="action_report_product_barcode_label" model="ir.actions.report">
+        <field name="name">Barcode Label</field>
+        <field name="model">product.product</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">product_qr_code.report_product_barcode_label</field>
+        <field name="report_file">product_qr_code.report_product_barcode_label</field>
+        <field name="print_report_name">'Barcode - %s' % (object.display_name)</field>
+        <field name="binding_model_id" ref="product.model_product_product"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Product Search View — barcode search + group by -->
+    <record id="view_product_template_search_inherit_qr" model="ir.ui.view">
+        <field name="name">product.template.search.inherit.qr</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <!-- Search field -->
+                <field name="barcode"
+                       filter_domain="[('barcode','ilike',self)]"
+                       string="Barcode"/>
+                <!-- Filters -->
+                <filter name="filter_by_barcode"
+                        string="Has Barcode"
+                        domain="[('barcode', '!=', False)]"/>
+                <filter name="group_by_barcode"
+                        string="Barcode"
+                        context="{'group_by': 'barcode'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

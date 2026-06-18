@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_product_label" model="report.paperformat">
+        <field name="name">custom label</field>
+        <field name="default" eval="True"/>
+        <field name="format">custom</field>
+        <field name="page_height">49</field>
+        <field name="page_width">46</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">11.00</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="disable_shrinking">True</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_product_template_label_custom" model="ir.actions.report">
+        <field name="name">Product Label (PDF) custom</field>
+        <field name="model">product.template</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">report_label_custom.template_report_product_label_custom</field>
+        <field name="report_file">report_label_custom.template_report_product_label_custom</field>
+        <field name="paperformat_id" ref="report_label_custom.paperformat_product_label"/>
+        <field name="print_report_name">'Products Labels - %s' % (object.name)</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="template_report_product_label_custom">
+        <t t-call="web.html_container">
+            <t t-call="web.basic_layout">
+                <t t-foreach="docs" t-as="doc">
+                    <t t-set="bimg" t-value="doc.get_barcode_image()"/>
+                    <div class="page" style="padding:4px;">
+                        <div class="row" t-if="bimg">
+                            <div class="col text-center">
+                                <img t-att-src="'data:image/png;base64,'+bimg"
+                                     style="width:180px;height:30px;" alt="Barcode"/>
+                            </div>
+                        </div>
+                        <div class="row" t-if="doc.barcode">
+                            <div class="col" style="font-size:12px;text-align:center;">
+                                <t t-esc="doc.barcode"/>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col" style="text-align:center;font-size:12px;">
+                                <t t-esc="doc.name"/>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col" style="text-align:center;font-size:10px;margin-top:4px;">
+                                <t t-esc="doc.list_price" t-options='{"widget": "float", "precision": 2}'/>
+                                <t t-esc="doc.currency_id.symbol"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
