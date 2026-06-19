@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!--
+        Safety-net cron: if a sync gets stuck in "fetching" state (e.g.
+        because all queue workers were down when the self-resume fired),
+        this cron re-enqueues _fetch_and_enqueue so progress resumes.
+
+        Runs every 15 minutes.  The primary resume mechanism is the
+        self-re-enqueue inside _fetch_and_enqueue itself — this cron
+        is only a fallback.
+    -->
     <record id="ir_cron_shopify_order_sync" model="ir.cron">
-        <field name="name">Shopify: Sync Orders</field>
+        <field name="name">Shopify: Resume Stuck Syncs</field>
         <field name="model_id" ref="model_shopify_sync"/>
         <field name="state">code</field>
-        <field name="code">model.sync_orders()</field>
-        <field name="interval_number">15</field>
+        <field name="code">model._cron_process_pending_syncs()</field>
+        <field name="interval_number">5</field>
         <field name="interval_type">minutes</field>
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
     </record>
 </odoo>

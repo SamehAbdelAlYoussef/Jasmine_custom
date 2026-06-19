@@ -38,7 +38,7 @@ class ShopifyWebhookController(http.Controller):
             sync_record = Sync.search([], limit=1)
             if not sync_record:
                 sync_record = Sync.create({'name': 'Shopify Sync'})
-            sync_record._create_or_update_sale_order(order_data)
+            sync_record._process_single_order(order_data)
             _logger.info("Shopify webhook: order #%s processed OK", order_number)
         except Exception as e:
             _logger.error(
