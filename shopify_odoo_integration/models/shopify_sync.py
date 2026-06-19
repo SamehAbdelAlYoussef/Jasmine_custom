@@ -1,26 +1,25 @@
 # -*- coding: utf-8 -*-
 """Shopify → Odoo sync engine — fetches orders via cursor-based pagination
-and processes them in batched, independent database transactions.
+and commits progress incrementally every 10 created orders.
 
 Architecture for 7 000 – 20 000+ orders (self-contained, no OCA deps)
 ----------------------------------------------------------------------
 1. **Cursor pagination** — follows Shopify's ``Link`` header (``rel="next"``)
    so we never lose position, even across cron restarts.
 
-2. **Independent transactions** — every batch of ``BATCH_SIZE`` orders runs
-   inside ``registry.cursor()`` and commits independently.  A crash only
-   loses the *current* batch (50 orders max); all previous batches are
-   already committed.
+2. **Incremental commits** — ``self.env.cr.commit()`` fires after every
+   10 successfully created orders so progress is never lost.  A crash
+   loses **at most** the last 9 uncommitted orders.
 
 3. **Idempotency** — ``x_shopify_id`` on ``sale.order`` (unique, indexed)
    is checked before every create, so the same Shopify order is never
-   imported twice, even if a partially-processed page is re-fetched.
+   imported twice, even after a resume.
 
 4. **Rate limiting** — inspects ``X-Shopify-Shop-Api-Call-Limit`` before
    each page fetch and sleeps when the bucket is nearly exhausted.
 
-5. **Per-order isolation** — a ``try/except`` around each order inside a
-   batch means one bad order never stops the rest of the batch.
+5. **Per-order isolation** — a ``try/except`` around each order means
+   one bad order never stops the rest of the sync.
 
 6. **Cron-driven + self-resuming** — the cron (every 5 min) picks up
    ``fetching`` syncs and processes up to ``MAX_RUNTIME_SECONDS``
@@ -41,7 +40,6 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 # ── tunables ────────────────────────────────────────────────────────────
-BATCH_SIZE = 50             # orders per DB transaction
 MAX_API_UTILISATION = 0.85  # sleep when used / limit exceeds this ratio
 MAX_RUNTIME_SECONDS = 240   # time-guard: stop 1 min before next cron (cron=5 min)
 RATE_LIMIT_SLEEP = 1.0      # seconds to sleep when API bucket is warm
@@ -316,35 +314,30 @@ class ShopifySync(models.Model):
             _logger.debug("Shopify cron: no pending syncs")
 
     # -----------------------------------------------------------------
-    # Core — fetch pages & process in independent-transaction batches
+    # Core — fetch pages & process with incremental commits
     # -----------------------------------------------------------------
     def _fetch_and_process(self, since_id=None):
-        """Fetch all order pages from Shopify and process in BATCH_SIZE
-        chunks, each inside its own database transaction.
+        """Fetch orders from Shopify (50 per API page) and process them
+        with ``self.env.cr.commit()`` every ``COMMIT_INTERVAL`` orders.
 
-        This method can be called:
-        - synchronously from ``sync_orders()`` (blocks the caller)
-        - from the cron ``_cron_process_pending_syncs()`` (background)
-
-        Cursor safety
-        -------------
-        The ``last_sync_id`` field is **only** advanced when every order
-        on a page has been fully committed (page-boundary tracking).
-        This means if the process dies mid-page, the next run will
-        re-fetch that page, but the ``x_shopify_id`` duplicate check
-        makes re-processing harmless (existing orders are skipped).
-
-        Rate limiting
-        -------------
-        After every page the ``X-Shopify-Shop-Api-Call-Limit`` header is
-        evaluated; the loop sleeps when the bucket is ≥ 85 % full.
-
-        Time guard
-        ---------
-        Stops after ``MAX_RUNTIME_SECONDS`` (240 s ≈ 4 min) so the
-        next cron invocation (every 5 min) can take over without overlap.
+        Design for production stability (7 000 – 20 000+ orders)
+        -----------------------------------------------------------
+        *   Shopify API limit reduced to 50 orders/page — smaller
+            payloads, faster responses, lower timeout risk.
+        *   Each order is wrapped in try/except — one failure never
+            stops the remaining orders.
+        *   ``self.env.cr.commit()`` fires after every 10 successfully
+            **created** orders, saving progress incrementally.  After
+            each commit the ORM cache is invalidated so subsequent
+            operations see fresh data.
+        *   ``last_sync_id`` is updated after every commit so a crash
+            loses **at most 10 orders** (which would be re-fetched
+            and skipped via ``x_shopify_id`` on resume).
+        *   Every order ID is logged (info on success, warning on
+            failure) for full traceability.
         """
         self.ensure_one()
+        COMMIT_INTERVAL = 10  # commit every N *created* orders
 
         shop = self._get_config('shop_url')
         if not shop:
@@ -362,58 +355,37 @@ class ShopifySync(models.Model):
         })
 
         base_url = f"https://{shop}/admin/api/2024-01/orders.json"
-        params = {'status': 'any', 'limit': 250}
+        params = {'status': 'any', 'limit': 50}  # smaller pages → lower timeout risk
         if resume_from:
             params['since_id'] = resume_from
 
-        # Local counters (synced to DB via write() periodically)
-        accumulated = []             # orders from current page not yet batched
-        last_committed_page_id = 0   # highest shopify ID from a FULLY-flushed page
+        # Counters
         total_fetched = self.orders_total
         total_created = self.orders_processed
         total_failed = self.orders_failed
+        last_committed_id = int(resume_from or 0)
+        created_since_commit = 0
         page = 1
         next_url = base_url
         start_time = time.time()
 
-        # -- helper: flush accumulated orders in BATCH_SIZE chunks ------
-        def _flush_batches(acc_list, page_top_id, t_created, t_failed):
-            """Process *acc_list* in ``BATCH_SIZE`` chunks, each in a
-            separate DB transaction.  Returns ``(remaining, created, failed)``.
-
-            When the list is fully drained (page boundary), the safe
-            cursor ``last_sync_id`` is advanced to ``page_top_id``.
-            """
-            local_acc = list(acc_list)
-            while len(local_acc) >= BATCH_SIZE:
-                batch = local_acc[:BATCH_SIZE]
-                local_acc = local_acc[BATCH_SIZE:]
-                c, f = self._process_batch_in_new_tx(batch)
-                t_created += c
-                t_failed += f
-                # Persist progress so the UI can see it
-                self.write({
-                    'orders_processed': t_created,
-                    'orders_failed': t_failed,
-                })
-            return local_acc, t_created, t_failed
-
         try:
-            # ---- Phase 1: fetch pages + dispatch batches ---------------
             while next_url:
-                # Time guard — leave 1 min buffer before next cron
+                # -- time guard (4 min) ----------------------------------
                 elapsed = time.time() - start_time
-                if elapsed > MAX_RUNTIME_SECONDS and self.env.user._is_internal():
+                if elapsed > MAX_RUNTIME_SECONDS:
                     _logger.info(
-                        "Shopify sync: time guard reached after %ds at page %d "
+                        "Shopify sync: time guard after %ds at page %d "
                         "(created %d, failed %d). Resuming on next cron.",
                         int(elapsed), page - 1, total_created, total_failed,
                     )
-                    # Only the *previous* fully-flushed page is safe
-                    if last_committed_page_id:
-                        self.write({'last_sync_id': str(int(last_committed_page_id))})
+                    # Flush any pending work before pausing
+                    if created_since_commit > 0:
+                        self.env.cr.commit()
+                        self.invalidate_recordset()
                     self.write({
                         'sync_state': 'fetching',
+                        'last_sync_id': str(last_committed_id),
                         'orders_processed': total_created,
                         'orders_total': total_fetched,
                         'orders_failed': total_failed,
@@ -426,7 +398,7 @@ class ShopifySync(models.Model):
                     next_url if next_url != base_url else f"{base_url}?{params}",
                 )
 
-                # ---- Fetch one page (250 orders max) -------------------
+                # -- fetch one page --------------------------------------
                 try:
                     if next_url == base_url:
                         resp = requests.get(
@@ -441,7 +413,8 @@ class ShopifySync(models.Model):
                     resp.raise_for_status()
                 except requests.exceptions.RequestException as exc:
                     _logger.error(
-                        "Shopify sync: API request failed on page %d — %s", page, exc,
+                        "Shopify sync: API request failed on page %d — %s",
+                        page, exc,
                     )
                     self.write({
                         'sync_state': 'failed',
@@ -457,37 +430,78 @@ class ShopifySync(models.Model):
                     break
 
                 total_fetched += len(orders)
+                page_max_id = max(int(o['id']) for o in orders) if orders else 0
                 _logger.info(
-                    "Shopify sync: page %d returned %d orders "
-                    "(fetched %d, created %d, failed %d)",
-                    page, len(orders), total_fetched, total_created, total_failed,
+                    "Shopify sync: page %d — %d orders (fetched %d, "
+                    "created %d, failed %d)",
+                    page, len(orders), total_fetched,
+                    total_created, total_failed,
                 )
 
-                # Highest ID in this page (IDs descend monotonically)
-                page_top_id = max(int(o['id']) for o in orders) if orders else 0
+                # -- process each order individually ---------------------
+                for order_data in orders:
+                    shopify_id = order_data.get('id', '?')
+                    order_ref = order_data.get('order_number', shopify_id)
 
-                # Append and flush full batches
-                accumulated.extend(orders)
-                accumulated, total_created, total_failed = _flush_batches(
-                    accumulated, page_top_id, total_created, total_failed,
-                )
+                    try:
+                        result = self._process_single_order(order_data)
+                        if result.get('status') == 'created':
+                            total_created += 1
+                            created_since_commit += 1
+                            _logger.info(
+                                "Shopify sync: ✅ order #%s → SO #%s",
+                                order_ref, result.get('sale_order_id'),
+                            )
+                        else:
+                            # skipped — already exists
+                            _logger.debug(
+                                "Shopify sync: ⏭ order #%s skipped (already SO #%s)",
+                                order_ref, result.get('sale_order_id'),
+                            )
+                    except Exception as exc:
+                        total_failed += 1
+                        _logger.warning(
+                            "Shopify sync: ❌ order #%s failed — %s",
+                            order_ref, exc, exc_info=False,
+                        )
 
-                # Advance safe cursor ONLY when page is fully drained
-                if not accumulated:
-                    last_committed_page_id = page_top_id
+                    # -- incremental commit every COMMIT_INTERVAL -------
+                    if created_since_commit >= COMMIT_INTERVAL:
+                        self.env.cr.commit()
+                        self.invalidate_recordset()
+                        last_committed_id = int(shopify_id) if shopify_id != '?' else last_committed_id
+                        created_since_commit = 0
+                        # Persist progress to the DB
+                        self.write({
+                            'last_sync_id': str(last_committed_id),
+                            'orders_processed': total_created,
+                            'orders_total': total_fetched,
+                            'orders_failed': total_failed,
+                            'last_sync_count': total_fetched,
+                        })
+                        _logger.info(
+                            "Shopify sync: committed — %d created, "
+                            "cursor=%s", total_created, last_committed_id,
+                        )
 
-                # Periodic progress persist
-                self.write({
-                    'orders_total': total_fetched,
-                    'orders_processed': total_created,
-                    'orders_failed': total_failed,
-                    'last_sync_count': total_fetched,
-                })
+                # -- commit page remainder --------------------------------
+                if created_since_commit > 0:
+                    self.env.cr.commit()
+                    self.invalidate_recordset()
+                    last_committed_id = page_max_id
+                    created_since_commit = 0
+                    self.write({
+                        'last_sync_id': str(last_committed_id),
+                        'orders_processed': total_created,
+                        'orders_total': total_fetched,
+                        'orders_failed': total_failed,
+                        'last_sync_count': total_fetched,
+                    })
 
-                # ---- Rate limiting ------------------------------------
+                # -- rate limiting ----------------------------------------
                 self._check_rate_limit(resp.headers)
 
-                # ---- Cursor pagination via Link header -----------------
+                # -- cursor pagination via Link header --------------------
                 next_url = None
                 link_header = resp.headers.get('Link', '')
                 for link in link_header.split(','):
@@ -500,24 +514,13 @@ class ShopifySync(models.Model):
 
                 page += 1
 
-            # ---- Phase 2: flush leftover orders (tail of last page) ----
-            if accumulated:
-                _logger.info(
-                    "Shopify sync: flushing remaining %d orders from last page",
-                    len(accumulated),
-                )
-                accumulated, total_created, total_failed = _flush_batches(
-                    accumulated, 0, total_created, total_failed,
-                )
-
-            # ---- Final state -------------------------------------------
-            final_cursor = last_committed_page_id or int(resume_from or 0)
+            # -- all pages done -------------------------------------------
             final_state = (
                 'completed_with_errors' if total_failed > 0 else 'completed'
             )
             self.write({
                 'sync_state': final_state,
-                'last_sync_id': str(final_cursor) if final_cursor else self.last_sync_id,
+                'last_sync_id': str(last_committed_id) if last_committed_id else self.last_sync_id,
                 'orders_processed': total_created,
                 'orders_total': total_fetched,
                 'orders_failed': total_failed,
@@ -526,82 +529,29 @@ class ShopifySync(models.Model):
 
         except Exception as exc:
             _logger.exception("Shopify sync: catastrophic failure")
-            safe_cursor = last_committed_page_id or int(resume_from or 0)
-            self.write({
-                'sync_state': 'failed',
-                'last_error': str(exc)[:500],
-                'last_sync_id': str(safe_cursor) if safe_cursor else self.last_sync_id,
-                'orders_processed': total_created,
-                'orders_total': total_fetched,
-                'orders_failed': total_failed,
-            })
+            # Try to save what we have
+            try:
+                if created_since_commit > 0:
+                    self.env.cr.commit()
+                self.write({
+                    'sync_state': 'failed',
+                    'last_error': str(exc)[:500],
+                    'last_sync_id': str(last_committed_id) if last_committed_id else self.last_sync_id,
+                    'orders_processed': total_created,
+                    'orders_total': total_fetched,
+                    'orders_failed': total_failed,
+                })
+            except Exception:
+                pass
 
         _logger.info(
             "Shopify sync: DONE — fetched=%d, created=%d, failed=%d, "
-            "pages=%d, last_committed_id=%s",
+            "pages=%d, cursor=%s",
             total_fetched, total_created, total_failed, page - 1,
-            last_committed_page_id or 'N/A',
+            last_committed_id or 'N/A',
         )
 
         return self.env['sale.order']
-
-    # -----------------------------------------------------------------
-    # Batch processing — independent DB transaction per batch
-    # -----------------------------------------------------------------
-    def _process_batch_in_new_tx(self, orders_batch):
-        """Process one batch of Shopify orders in a **new** DB transaction.
-
-        Uses ``registry.cursor()`` to obtain a dedicated cursor.
-        - **Success**: commits all orders in the batch.
-        - **Failure**: rolls back ONLY this batch; previous batches are
-          already committed and untouched.
-
-        :param orders_batch: list of Shopify order dicts (max BATCH_SIZE)
-        :returns: ``(created_count, failed_count)``
-        """
-        self.ensure_one()
-
-        try:
-            with self.env.registry.cursor() as new_cr:
-                new_env = self.env(cr=new_cr)
-                # Re-browse self in the new transaction context
-                sync_in_new = new_env['shopify.sync'].browse(self.id)
-                batch_created = 0
-                batch_failed = 0
-
-                for order_data in orders_batch:
-                    try:
-                        result = sync_in_new._process_single_order(order_data)
-                        if result.get('status') == 'created':
-                            batch_created += 1
-                        # 'skipped' (already exists) counts as success
-                    except Exception as exc:
-                        batch_failed += 1
-                        order_ref = order_data.get('order_number', order_data.get('id', '?'))
-                        _logger.warning(
-                            "Shopify sync: order #%s failed in batch — %s",
-                            order_ref, exc,
-                        )
-
-                new_cr.commit()
-                _logger.debug(
-                    "Shopify sync: batch committed — %d created, %d failed",
-                    batch_created, batch_failed,
-                )
-                return batch_created, batch_failed
-
-        except Exception as exc:
-            _logger.error(
-                "Shopify sync: ENTIRE BATCH rolled back (size=%d) — %s",
-                len(orders_batch), exc,
-            )
-            # Persist the error on the main cursor (not the dead batch cursor)
-            try:
-                self.write({'last_error': f"Batch error: {exc}"[:500]})
-                self.env.cr.commit()
-            except Exception:
-                pass
-            return 0, len(orders_batch)
 
     # -----------------------------------------------------------------
     # Single-order processing (called inside a batch transaction)
@@ -736,19 +686,41 @@ class ShopifySync(models.Model):
         return pricelist or self.env['product.pricelist'].search([], limit=1)
 
     def _prepare_sale_order_vals(self, shopify_order, partner, currency, pricelist):
-        """Build sale.order vals dict (state NOT set here — see confirm logic)."""
-        date_order = fields.Datetime.now()
-        created_at = shopify_order.get('created_at') or shopify_order.get('processed_at')
-        if created_at:
+        """Build sale.order vals dict (state NOT set here — see confirm logic).
+
+        Date priority
+        -------------
+        1. Shopify ``created_at`` (order creation timestamp)
+        2. Shopify ``processed_at`` (order processing timestamp)
+        3. ``fields.Datetime.now()`` — **only** when neither Shopify
+           field is present or parseable (logged as a warning because
+           accurate Shopify data is expected).
+        """
+        # -- date: Shopify first, fallback to now as last resort --------
+        date_order = None
+        raw_date = shopify_order.get('created_at') or shopify_order.get('processed_at')
+        if raw_date:
             try:
-                # Shopify sends ISO‑8601 with UTC offset, e.g.
-                # "2026-06-19T23:07:28+03:00".  isoparse returns an
-                # *aware* datetime; Odoo fields require *naive* UTC.
-                # Convert: parse → UTC → strip tzinfo.
-                aware = dateutil_parser.isoparse(created_at)
+                aware = dateutil_parser.isoparse(raw_date)
                 date_order = aware.astimezone(UTC).replace(tzinfo=None)
             except (ValueError, TypeError, Exception):
-                _logger.debug("Could not parse date %s, using now", created_at)
+                _logger.warning(
+                    "Shopify sync: could not parse date '%s' for order #%s",
+                    raw_date, shopify_order.get('order_number', '?'),
+                )
+
+        if not date_order:
+            _logger.warning(
+                "Shopify sync: no valid date for order #%s, falling back to now()",
+                shopify_order.get('order_number', '?'),
+            )
+            date_order = fields.Datetime.now()
+
+        _logger.info(
+            "Shopify sync: order #%s date_order=%s (Shopify raw=%s)",
+            shopify_order.get('order_number', '?'),
+            date_order, raw_date,
+        )
 
         financial_status = shopify_order.get('financial_status', '')
         status_map = {
