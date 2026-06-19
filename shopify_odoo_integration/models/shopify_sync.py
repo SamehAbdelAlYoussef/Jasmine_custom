@@ -959,3 +959,180 @@ class ShopifySync(models.Model):
             'price_unit': price,
             'name': f"Shipping: {shipping.get('title', 'Shipping')}",
         })
+
+    # -----------------------------------------------------------------
+    # Webhook handlers — update / cancel / paid / fulfilled
+    # -----------------------------------------------------------------
+    def _update_sale_order(self, order_data):
+        """Update an existing sale.order when Shopify ``orders/updated`` fires.
+
+        Updates: order lines, shipping, financial status, and totals.
+        If the sale.order doesn't exist yet, falls back to creating it.
+        """
+        shopify_id = str(order_data['id'])
+        order_ref = order_data.get('order_number', shopify_id)
+        SaleOrder = self.env['sale.order']
+
+        existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
+        if not existing:
+            _logger.info(
+                "Shopify webhook: update for #%s but SO not found, creating", order_ref,
+            )
+            return self._process_single_order(order_data)
+
+        # -- update line items (remove old, recreate) --------------------
+        try:
+            existing.order_line.unlink()
+        except Exception as exc:
+            _logger.warning(
+                "Shopify webhook: could not unlink lines for SO %s — %s",
+                existing.name, exc,
+            )
+
+        for item in order_data.get('line_items', []):
+            try:
+                self._create_order_line(existing, item)
+            except Exception as exc:
+                _logger.warning(
+                    "Shopify webhook: line '%s' failed for SO %s — %s",
+                    item.get('title', '?'), existing.name, exc,
+                )
+
+        # -- update shipping ---------------------------------------------
+        try:
+            self._create_shipping_line(existing, order_data)
+        except Exception as exc:
+            _logger.warning(
+                "Shopify webhook: shipping update failed for SO %s — %s",
+                existing.name, exc,
+            )
+
+        # -- update financial status -------------------------------------
+        financial_status = order_data.get('financial_status', '')
+        status_map = {
+            'paid': 'invoiced',
+            'partially_paid': 'invoiced',
+            'pending': 'to invoice',
+            'refunded': 'invoiced',
+            'voided': 'no',
+        }
+        new_invoice_status = status_map.get(financial_status, 'to invoice')
+        existing.invoice_status = new_invoice_status
+
+        # If changed to paid and still draft, confirm
+        if financial_status == 'paid' and existing.state == 'draft':
+            try:
+                existing.action_confirm()
+            except Exception:
+                pass  # already confirmed or blocked
+
+        existing.message_post(
+            body=f"Updated from Shopify — financial_status={financial_status}",
+        )
+        _logger.info(
+            "Shopify webhook: updated SO %s for Shopify #%s (status=%s)",
+            existing.name, order_ref, financial_status,
+        )
+        return {'status': 'updated', 'sale_order_id': existing.id}
+
+    def _cancel_sale_order(self, order_data):
+        """Cancel the sale.order when Shopify ``orders/cancelled`` fires."""
+        shopify_id = str(order_data['id'])
+        order_ref = order_data.get('order_number', shopify_id)
+        SaleOrder = self.env['sale.order']
+
+        existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
+        if not existing:
+            _logger.warning(
+                "Shopify webhook: cancel for #%s but SO not found", order_ref,
+            )
+            return {'status': 'not_found', 'shopify_order': order_ref}
+
+        cancel_reason = order_data.get('cancel_reason', '') or 'Cancelled in Shopify'
+        try:
+            existing.action_cancel()
+            existing.message_post(
+                body=f"Cancelled from Shopify — reason: {cancel_reason}",
+            )
+        except Exception as exc:
+            # If already cancelled or in a state that can't be cancelled,
+            # just post a note
+            _logger.warning(
+                "Shopify webhook: action_cancel failed for SO %s — %s",
+                existing.name, exc,
+            )
+            existing.message_post(
+                body=f"Shopify order #{order_ref} was cancelled "
+                     f"(reason: {cancel_reason}). Manual action required.",
+            )
+
+        _logger.info(
+            "Shopify webhook: cancelled SO %s for Shopify #%s (reason=%s)",
+            existing.name, order_ref, cancel_reason,
+        )
+        return {'status': 'cancelled', 'sale_order_id': existing.id}
+
+    def _mark_order_paid(self, order_data):
+        """Handle ``orders/paid`` webhook — confirm + mark invoiced."""
+        shopify_id = str(order_data['id'])
+        order_ref = order_data.get('order_number', shopify_id)
+        SaleOrder = self.env['sale.order']
+
+        existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
+        if not existing:
+            _logger.info(
+                "Shopify webhook: paid for #%s but SO not found, creating", order_ref,
+            )
+            return self._process_single_order(order_data)
+
+        existing.invoice_status = 'invoiced'
+        if existing.state == 'draft':
+            try:
+                existing.action_confirm()
+            except Exception as exc:
+                _logger.warning(
+                    "Shopify webhook: confirm failed for SO %s — %s",
+                    existing.name, exc,
+                )
+
+        existing.message_post(body="Payment confirmed in Shopify — marked as invoiced")
+        _logger.info(
+            "Shopify webhook: marked SO %s as paid for Shopify #%s",
+            existing.name, order_ref,
+        )
+        return {'status': 'paid', 'sale_order_id': existing.id}
+
+    def _note_fulfillment(self, order_data):
+        """Handle ``orders/fulfilled`` — post fulfillment info on SO."""
+        shopify_id = str(order_data['id'])
+        order_ref = order_data.get('order_number', shopify_id)
+        SaleOrder = self.env['sale.order']
+
+        existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
+        if not existing:
+            _logger.warning(
+                "Shopify webhook: fulfilled for #%s but SO not found", order_ref,
+            )
+            return {'status': 'not_found', 'shopify_order': order_ref}
+
+        fulfillments = order_data.get('fulfillments', [])
+        if fulfillments:
+            tracking_info = []
+            for f in fulfillments:
+                tracking = f.get('tracking_company', '') or ''
+                number = f.get('tracking_number', '') or ''
+                status = f.get('status', '')
+                if tracking or number:
+                    tracking_info.append(f"{tracking}: {number} ({status})")
+            note = "Fulfilled in Shopify"
+            if tracking_info:
+                note += " — Tracking: " + "; ".join(tracking_info)
+        else:
+            note = "Fulfilled in Shopify (no tracking details)"
+
+        existing.message_post(body=note)
+        _logger.info(
+            "Shopify webhook: noted fulfillment for SO %s (Shopify #%s)",
+            existing.name, order_ref,
+        )
+        return {'status': 'fulfilled', 'sale_order_id': existing.id}
