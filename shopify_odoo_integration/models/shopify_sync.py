@@ -34,7 +34,7 @@ import requests
 from dateutil import parser as dateutil_parser
 from dateutil.tz import UTC
 
-from odoo import fields, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -578,8 +578,8 @@ class ShopifySync(models.Model):
             order_data, partner, currency, pricelist,
         )
         order_vals['x_shopify_id'] = shopify_id
-        # mail suppression context is already on self.env from the caller
-        sale_order = SaleOrder.with_context(self.env.context).create(order_vals)
+        # mail suppression context is already on self.env from _process_order_isolated
+        sale_order = SaleOrder.create(order_vals)
 
         # ── Confirm if paid (draft → sale) ────────────────────────────
         financial_status = order_data.get('financial_status', '')
@@ -636,10 +636,18 @@ class ShopifySync(models.Model):
         """
         try:
             with self.env.registry.cursor() as new_cr:
-                new_env = self.env(cr=new_cr).with_context(
-                    mail_create_nosubscribe=True,
-                    mail_notrack=True,
-                    tracking_disable=True,
+                # Build a new environment WITH mail-suppressed context.
+                # Important: ``api.Environment()`` takes context as kwarg,
+                # not via ``.with_context()`` (that's a model method).
+                new_env = api.Environment(
+                    new_cr,
+                    self.env.uid,
+                    {
+                        **self.env.context,
+                        'mail_create_nosubscribe': True,
+                        'mail_notrack': True,
+                        'tracking_disable': True,
+                    },
                 )
                 sync_in_new = new_env['shopify.sync'].browse(self.id)
                 result = sync_in_new._process_single_order(order_data)
