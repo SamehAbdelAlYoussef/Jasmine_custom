@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_inherit_stars_design" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.stars.design</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <div class="d-flex align-items-center o_loyalty_badge">
+                    <label for="rating_stars" class="fw-bold me-3">Customer Rating:</label>
+                    <field name="rating_stars" widget="priority" readonly="1" class="o_loyalty_stars"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_tree_inherit_stars" model="ir.ui.view">
+        <field name="name">res.partner.tree.inherit.stars</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='display_name']" position="after">
+                <field name="rating_stars" widget="priority" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_kanban_inherit_stars" model="ir.ui.view">
+        <field name="name">res.partner.kanban.inherit.stars</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.res_partner_kanban_view"/>
+        <field name="arch" type="xml">
+            <field name="city" position="after">
+                <field name="rating_stars" widget="priority" />
+            </field>
+        </field>
+    </record>
+
+</odoo>

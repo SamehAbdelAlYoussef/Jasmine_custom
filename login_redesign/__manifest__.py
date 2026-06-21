@@ -4,6 +4,7 @@
     'summary': 'Modern animated login page with glassmorphism design',
     'version': '19.0.1.0.0',
     'category': 'Authentication',
+    'sequence': 2,
     'author': 'Sameh AbdelAl',
     'depends': [
         'web',

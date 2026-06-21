@@ -14,6 +14,7 @@
     'version': '19.0.1.0.0',
     'category': 'Sales',
     'author': 'Sameh AbdelAl',
+    'sequence': 1,
     'depends': ['base', 'sale', 'sale_management'],
     'data': [
         'security/ir.model.access.csv',

@@ -4,6 +4,7 @@
     'version': '19.0.1.0.0',
     'category': 'Theme/Beauty',
     'author': 'Sameh AbdelAl',
+    'sequence': 3,
     'depends': [
         'website',
         'auth_signup',

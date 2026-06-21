@@ -51,6 +51,18 @@ class ProductProduct(models.Model):
                 _logger.error("Barcode image failed for %s: %s", product.barcode, e)
                 product.barcode_image = False
 
+    def write(self, vals):
+        res = super(ProductProduct, self).write(vals)
+        # Regenerate barcode when categ_id or seller_ids changes
+        # (these can come via product.template write or be set directly)
+        prefix_fields = {'categ_id', 'seller_ids'}
+        if prefix_fields & set(vals.keys()):
+            for product in self:
+                barcode = product._build_barcode(product)
+                if barcode:
+                    super(ProductProduct, product).write({'barcode': barcode})
+        return res
+
     def action_generate_barcode(self):
         """Generate barcode for selected products (only if empty)"""
         for product in self:
@@ -142,6 +154,20 @@ class ProductTemplate(models.Model):
     def _compute_barcode(self):
         self._compute_template_field_from_variant_field('barcode')
 
+    def _set_barcode(self):
+        """Write barcode to the first variant."""
+        for template in self:
+            variant = template.product_variant_ids[:1]
+            if variant:
+                variant.barcode = template.barcode
+
+    def _search_barcode(self, operator, value):
+        """Search barcode on variants."""
+        variants = self.env['product.product'].search(
+            [('barcode', operator, value)], limit=None
+        )
+        return [('id', 'in', variants.product_tmpl_id.ids)]
+
     @api.depends('product_variant_ids.barcode_image')
     def _compute_barcode_image_template(self):
         for template in self:
@@ -160,6 +186,13 @@ class ProductTemplate(models.Model):
             'tag': 'reload',
         }
 
+    def _trigger_barcode_regeneration(self):
+        """Regenerate barcodes for all variants (called when vendor/category changes)."""
+        for variant in self.product_variant_ids:
+            barcode = variant._build_barcode(variant)
+            if barcode:
+                variant.write({'barcode': barcode})
+
     @api.model
     def create(self, vals):
         template = super(ProductTemplate, self).create(vals)
@@ -173,6 +206,22 @@ class ProductTemplate(models.Model):
             # Recompute barcode_image on template
             template._compute_barcode_image_template()
         return template
+
+    def write(self, vals):
+        # Detect if category changed — triggers barcode regeneration
+        # Note: seller_ids is One2many (virtual), handled via
+        # product.supplierinfo overrides below
+        prefix_changed = 'categ_id' in vals
+        res = super(ProductTemplate, self).write(vals)
+        for template in self:
+            for variant in template.product_variant_ids:
+                if prefix_changed or not variant.barcode:
+                    # Regenerate barcode when category changes
+                    # or variant has no barcode yet
+                    barcode = variant._build_barcode(variant)
+                    if barcode:
+                        variant.write({'barcode': barcode})
+        return res
 
     def action_generate_barcode(self):
         """Generate barcodes for all variants of this template"""
@@ -191,3 +240,29 @@ class ProductTemplate(models.Model):
             'type': 'ir.actions.client',
             'tag': 'reload',
         }
+
+
+class ProductSupplierinfo(models.Model):
+    """Hook into vendor list changes to regenerate barcodes."""
+    _inherit = 'product.supplierinfo'
+
+    @api.model
+    def create(self, vals):
+        record = super(ProductSupplierinfo, self).create(vals)
+        if record.product_tmpl_id:
+            record.product_tmpl_id._trigger_barcode_regeneration()
+        return record
+
+    def write(self, vals):
+        res = super(ProductSupplierinfo, self).write(vals)
+        for record in self:
+            if record.product_tmpl_id:
+                record.product_tmpl_id._trigger_barcode_regeneration()
+        return res
+
+    def unlink(self):
+        templates = self.mapped('product_tmpl_id')
+        res = super(ProductSupplierinfo, self).unlink()
+        for template in templates:
+            template._trigger_barcode_regeneration()
+        return res
