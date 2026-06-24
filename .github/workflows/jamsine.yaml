@@ -19,13 +19,17 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # التأكد من وجود المجلد وصلاحيته
-            ls -ld /opt/odoo_docker/Jasmine_custom
-            
-            # سحب التحديثات
+            # 1. الدخول للمجلد وإجبار Git على تجاهل التغييرات المحلية
             cd /opt/odoo_docker/Jasmine_custom
+            git reset --hard origin/main
             git pull origin main
             
-            # إعادة تشغيل الحاوية
+            # 2. الانتقال للمسار الرئيسي واستخدام docker compose (بدون شرطة)
             cd /opt/odoo_docker
-            docker-compose restart web_ent
+            
+            # حاول استخدام docker compose، إذا فشل جرب المسار الكامل
+            if command -v docker compose &> /dev/null; then
+                docker compose restart web_ent
+            else
+                /usr/local/bin/docker-compose restart web_ent
+            fi
