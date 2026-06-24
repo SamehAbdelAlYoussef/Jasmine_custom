@@ -1,4 +1,4 @@
-name: Deploy Custom Addons
+name: Deploy and Upgrade Odoo
 
 on:
   push:
@@ -12,24 +12,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Server
+      - name: Deploy and Upgrade
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # 1. الدخول للمجلد وإجبار Git على تجاهل التغييرات المحلية
+            # 1. تحديث الكود من GitHub
             cd /opt/odoo_docker/Jasmine_custom
             git reset --hard origin/main
             git pull origin main
             
-            # 2. الانتقال للمسار الرئيسي واستخدام docker compose (بدون شرطة)
+            # 2. الانتقال للمسار الرئيسي
             cd /opt/odoo_docker
             
-            # حاول استخدام docker compose، إذا فشل جرب المسار الكامل
+            # 3. إعادة التشغيل
             if command -v docker compose &> /dev/null; then
                 docker compose restart web_ent
             else
                 /usr/local/bin/docker-compose restart web_ent
             fi
+            
+            # 4. تحديث الموديلات (Upgrade)
+            # ننتظر 5 ثوانٍ لضمان استقرار حاوية أودو قبل البدء بالتحديث
+            sleep 5
+            docker compose exec -T web_ent python3 /opt/odoo/odoo-core/odoo-bin -c /etc/odoo/odoo.conf -d erp-jasmine -u all --stop-after-init
