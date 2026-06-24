@@ -136,7 +136,7 @@
                            required="required" autocomplete="current-password"
                            t-att-autofocus="'autofocus' if login else None"
                            maxlength="4096"/>
-                    <label for="password" class="login_floating_label text-dark">Password s</label>
+                    <label for="password" class="login_floating_label text-dark">Password</label>
                     <button type="button" class="login_eye_btn o_show_password"
                             aria-label="Show password">
                         <i class="fa fa-eye"/>
