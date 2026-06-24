@@ -1,0 +1,35 @@
+name: Deploy Odoo to Server
+
+on:
+  push:
+    branches:
+      - main  # أو الفرع الذي تعمل عليه
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # 1. الدخول لمجلد المشروع
+            cd /opt/odoo_docker
+            
+            # 2. سحب التحديثات من GitHub
+            git pull origin main
+            
+            # 3. بناء الحاوية مرة أخرى (لأن الكود في Jasmine_custom تغير)
+            docker compose build web_ent
+            
+            # 4. إعادة تشغيل الخدمة بدون توقف كامل للنظام
+            docker compose up -d web_ent
+            
+            # 5. تنظيف الصور القديمة غير المستخدمة (اختياري لتوفير المساحة)
+            docker image prune -f

@@ -1,27 +1,20 @@
+server key
+ssh root@89.117.51.121
+password  >>
+Ss01017729427
+
 Logs
 sudo docker compose logs --tail 50 -f web_ent
-restart 
+restart
 sudo docker compose restart web_ent
 
+conect  db
+  docker exec -it container-name  psql -U odoo -d erp-jasmine
 
 
+install reauiremnts in container
 
- psql -d msolutions -c "SELECT id, name, state FROM ir_module_module WHERE name='product_qr_code';"
-  psql -d msolutions -c "DELETE FROM ir_module_module WHERE name='product_qr_code';"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+docker exec <odoo-container> pip3 install python-barcode
 
 
 links
