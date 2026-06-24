@@ -12,20 +12,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug and Deploy
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # اطبع المسار الحالي لمعرفة أين تقف
-            echo "Current Path:"
-            pwd
+            # التأكد من وجود المجلد وصلاحيته
+            ls -ld /opt/odoo_docker/Jasmine_custom
             
-            # اطبع قائمة المجلدات في opt
-            echo "Listing /opt:"
-            ls -l /opt
+            # سحب التحديثات
+            cd /opt/odoo_docker/Jasmine_custom
+            git pull origin main
             
-            # محاولة الدخول وتحديث الكود
-            cd /opt/odoo_docker/Jasmine_custom && git pull origin main
+            # إعادة تشغيل الحاوية
+            cd /opt/odoo_docker
+            docker-compose restart web_ent
