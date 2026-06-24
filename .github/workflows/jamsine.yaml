@@ -1,4 +1,4 @@
-name: Deploy and Upgrade Odoo
+name: Deploy Custom Addons
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy and Upgrade
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -27,14 +27,9 @@ jobs:
             # 2. الانتقال للمسار الرئيسي
             cd /opt/odoo_docker
             
-            # 3. إعادة التشغيل
+            # 3. إعادة التشغيل (أسرع وأخف عملية)
             if command -v docker compose &> /dev/null; then
                 docker compose restart web_ent
             else
                 /usr/local/bin/docker-compose restart web_ent
             fi
-            
-            # 4. تحديث الموديلات (Upgrade)
-            # ننتظر 5 ثوانٍ لضمان استقرار حاوية أودو قبل البدء بالتحديث
-            sleep 5
-            docker compose exec -T web_ent python3 /opt/odoo/odoo-core/odoo-bin -c /etc/odoo/odoo.conf -d erp-jasmine -u all --stop-after-init
