@@ -29,55 +29,50 @@
     <template id="template_report_product_label_custom">
         <t t-call="web.html_container">
             <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
                 html, body {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    width: 38mm !important;
-                    height: 25mm !important;
-                    overflow: hidden !important;
-                }
-                .label-wrap {
                     width: 38mm;
                     height: 25mm;
-                    box-sizing: border-box;
                     overflow: hidden;
-                    padding-top: 3mm !important;
-                    margin-top: 3mm !important;
-                    margin-right: 3mm !important;
-                    text-align: center;
                     font-family: Arial, sans-serif;
                 }
-                .label-wrap .image_parcode {
+                .label-page {
+                    width: 38mm;
+                    height: 25mm;
+                    overflow: hidden;
+                    text-align: center;
+                    /*
+                        الـ label = barcode(8mm) + humanreadable(~2mm) + num(2mm) + name(2.5mm) = ~14.5mm
+                        top margin = (25 - 14.5) / 2 = 5.25mm
+                        نستخدم padding-top بالـ mm — ثابت على أي DPI
+                    */
+                    padding-top: 8mm;
+                    padding-left: 7mm;
+                }
+                .label-page img {
                     display: block;
                     margin: 0 auto;
-                   padding-top: 3mm !important;
-                    margin-top: 1mm !important;
-                    margin-left: 6mm !important;
                 }
                 .label-num {
                     font-size: 6px;
                     margin-top: 0.3mm;
                     letter-spacing: 0.5px;
-                                   margin-left: 6mm !important;
-
                     text-align: center;
                 }
                 .label-name {
                     font-size: 7px;
                     font-weight: bold;
-                    margin-top: 1mm;
+                    margin-top: 0.8mm;
                     overflow: hidden;
                     white-space: nowrap;
                     text-overflow: ellipsis;
                     text-align: center;
-                                    margin-left: 6mm !important;
-
                 }
             </style>
 
             <t t-foreach="products_data" t-as="p">
                 <t t-set="is_last" t-value="p_index == len(products_data) - 1"/>
-                <div class="label-wrap mt-5 pt-5 ps-4"  t-att-style="'' if is_last else 'page-break-after:always;'">
+                <div class="label-page" t-att-style="'' if is_last else 'page-break-after:always;'">
 
                     <t t-if="p['barcode']">
                         <div t-out="p['barcode']"
@@ -86,7 +81,7 @@
                                  'symbology': 'Code128',
                                  'quiet': 0,
                                  'img_style': 'width:36mm; height:8mm; display:block; margin:0 auto;',
-                                 'img_class': 'image_parcode'
+                                 'img_class': ''
                              }"/>
                     </t>
                     <t t-else="">
