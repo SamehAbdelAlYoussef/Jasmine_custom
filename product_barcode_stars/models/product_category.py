@@ -26,11 +26,12 @@ class ProductCategory(models.Model):
                         (rec.category_number, dup.name)
                     )
 
-    @api.model
-    def create(self, vals):
-        if not vals.get('category_number'):
-            vals['category_number'] = self._get_next_category_number()
-        return super(ProductCategory, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('category_number'):
+                vals['category_number'] = self._get_next_category_number()
+        return super().create(vals_list)
 
     @api.model
     def _get_next_category_number(self):
