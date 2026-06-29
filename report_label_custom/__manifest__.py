@@ -6,6 +6,7 @@
     'sequence': 4,
     'depends': ['stock', 'product'],
     'data': [
+        'views/product_label_layout_views.xml',
         'views/product_views.xml',
         'views/stock_picking_view.xml',
         'reports/product_label_custom.xml',

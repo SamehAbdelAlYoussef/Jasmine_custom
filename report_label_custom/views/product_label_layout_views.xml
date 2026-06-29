@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit the label layout form for custom label visibility -->
+    <record id="product_label_layout_form_custom" model="ir.ui.view">
+        <field name="name">product.label.layout.form.custom</field>
+        <field name="inherit_id" ref="product.product_label_layout_form"/>
+        <field name="model">product.label.layout</field>
+        <field name="arch" type="xml">
+            <!-- Hide extra_html for custom format (not applicable) -->
+            <xpath expr="//field[@name='extra_html']" position="attributes">
+                <attribute name="invisible">print_format not in ('2x7xprice', 'custom')</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
