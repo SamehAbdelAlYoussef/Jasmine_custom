@@ -28,9 +28,56 @@
 
     <template id="template_report_product_label_custom">
         <t t-call="web.html_container">
+            <style>
+                html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 38mm !important;
+                    height: 25mm !important;
+                    overflow: hidden !important;
+                }
+                .label-wrap {
+                    width: 38mm;
+                    height: 25mm;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                    padding-top: 3mm !important;
+                    margin-top: 3mm !important;
+                    margin-right: 3mm !important;
+                    text-align: center;
+                    font-family: Arial, sans-serif;
+                }
+                .label-wrap .image_parcode {
+                    display: block;
+                    margin: 0 auto;
+                   padding-top: 3mm !important;
+                    margin-top: 1mm !important;
+                    margin-left: 6mm !important;
+                }
+                .label-num {
+                    font-size: 6px;
+                    margin-top: 0.3mm;
+                    letter-spacing: 0.5px;
+                                   margin-left: 6mm !important;
+
+                    text-align: center;
+                }
+                .label-name {
+                    font-size: 7px;
+                    font-weight: bold;
+                    margin-top: 1mm;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    text-align: center;
+                                    margin-left: 6mm !important;
+
+                }
+            </style>
+
             <t t-foreach="products_data" t-as="p">
                 <t t-set="is_last" t-value="p_index == len(products_data) - 1"/>
-                <div t-att-style="'width:38mm; height:25mm; padding:1.5mm; box-sizing:border-box; font-family:Arial,sans-serif; text-align:center; overflow:hidden;' + ('' if is_last else ' page-break-after:always;')">
+                <div class="label-wrap mt-5 pt-5 ps-4"  t-att-style="'' if is_last else 'page-break-after:always;'">
 
                     <t t-if="p['barcode']">
                         <div t-out="p['barcode']"
@@ -38,25 +85,18 @@
                                  'widget': 'barcode',
                                  'symbology': 'Code128',
                                  'quiet': 0,
-                                 'img_style': 'width:34mm; height:8mm;',
-                                 'img_class': ''
+                                 'img_style': 'width:36mm; height:8mm; display:block; margin:0 auto;',
+                                 'img_class': 'image_parcode'
                              }"/>
                     </t>
                     <t t-else="">
-                        <div style="width:34mm; height:8mm; background:#ffcccc; font-size:5px; line-height:8mm; margin:0 auto;">
+                        <div style="width:36mm; height:8mm; background:#ffcccc; font-size:5px; line-height:8mm; text-align:center; margin:0 auto;">
                             No Barcode
                         </div>
                     </t>
 
-                    <!-- Barcode Number -->
-                    <div style="font-size:5.5px; margin-top:0.5mm; letter-spacing:0.5px;">
-                        <t t-out="p['barcode']"/>
-                    </div>
-
-                    <!-- Product Name -->
-                    <div style="font-size:6.5px; font-weight:bold; margin-top:0.5mm; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:35mm;">
-                        <t t-out="p['name']"/>
-                    </div>
+                    <div class="label-num"><t t-out="p['barcode']"/></div>
+                    <div class="label-name"><t t-out="p['name']"/></div>
 
                 </div>
             </t>
