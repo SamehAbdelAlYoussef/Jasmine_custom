@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-   <record id="paperformat_product_label" model="report.paperformat">
+    <record id="paperformat_product_label" model="report.paperformat">
         <field name="name">Xprinter Label 38x25</field>
-        <field name="default" eval="True"/>
+        <field name="default" eval="False"/>
         <field name="format">custom</field>
         <field name="page_height">25</field>
         <field name="page_width">38</field>
@@ -14,68 +13,53 @@
         <field name="margin_right">0</field>
         <field name="header_line" eval="False"/>
         <field name="header_spacing">0</field>
-        <field name="disable_shrinking">True</field>
+        <field name="disable_shrinking" eval="True"/>
         <field name="dpi">203</field>
     </record>
 
-         <record id="action_report_product_template_label_custom" model="ir.actions.report">
-        <field name="name">Product Label (PDF) custom</field>
-        <!-- ✅ غيّر لـ product.product -->
+    <record id="action_report_product_label_custom" model="ir.actions.report">
+        <field name="name">Product Label Custom 38x25</field>
         <field name="model">product.product</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">report_label_custom.template_report_product_label_custom</field>
-        <field name="report_file">report_label_custom.template_report_product_label_custom</field>
+        <field name="report_file">report_label_custom/template_report_product_label_custom</field>
         <field name="paperformat_id" ref="report_label_custom.paperformat_product_label"/>
-        <field name="print_report_name">'Products Labels - %s' % (object.name)</field>
-        <field name="binding_type">report</field>
     </record>
 
-    <!--
-        Minimal label template for Xprinter 38x25mm thermal printer.
-        - Outputs a bare <main> element (required by Odoo's _prepare_html).
-        - _prepare_html extracts <main> children and wraps them in
-          web.minimal_layout which includes Bootstrap CSS.
-        - A single minimal <style> block cancels Bootstrap's .container padding.
-        - All label content uses inline styles for thermal printer compatibility.
-    -->
     <template id="template_report_product_label_custom">
-        <t t-call="web.basic_layout">
-            <t t-foreach="docs" t-as="doc">
-                <div style="width:38mm; height:25mm; padding:2mm;
-                            page-break-after:always; box-sizing:border-box;
-                            font-family:Arial,sans-serif; text-align:center;
-                            border:1px solid #000;">  <!-- Border عشان تشوف الـ label -->
+        <t t-call="web.html_container">
+            <t t-foreach="products_data" t-as="p">
+                <t t-set="is_last" t-value="p_index == len(products_data) - 1"/>
+                <div t-att-style="'width:38mm; height:25mm; padding:1.5mm; box-sizing:border-box; font-family:Arial,sans-serif; text-align:center; overflow:hidden;' + ('' if is_last else ' page-break-after:always;')">
 
-                    <!-- Barcode Image -->
-                    <img t-if="doc.barcode"
-                         t-att-src="'/report/barcode/?type=Code128&amp;value=%s&amp;width=200&amp;height=60' % doc.barcode"
-                         style="width:28mm; height:8mm;"/>
+                    <t t-if="p['barcode']">
+                        <div t-out="p['barcode']"
+                             t-options="{
+                                 'widget': 'barcode',
+                                 'symbology': 'Code128',
+                                 'quiet': 0,
+                                 'img_style': 'width:34mm; height:8mm;',
+                                 'img_class': ''
+                             }"/>
+                    </t>
+                    <t t-else="">
+                        <div style="width:34mm; height:8mm; background:#ffcccc; font-size:5px; line-height:8mm; margin:0 auto;">
+                            No Barcode
+                        </div>
+                    </t>
 
-                    <!-- Placeholder لو مفيش barcode -->
-                    <div t-if="not doc.barcode"
-                         style="width:28mm; height:8mm; background:#ffcccc;">
-                        No Barcode
-                    </div>
-
-                    <!-- Barcode Text -->
-                    <div style="font-size:6px; margin-top:1mm;">
-                        <t t-out="doc.barcode or 'N/A'"/>
+                    <!-- Barcode Number -->
+                    <div style="font-size:5.5px; margin-top:0.5mm; letter-spacing:0.5px;">
+                        <t t-out="p['barcode']"/>
                     </div>
 
                     <!-- Product Name -->
-                    <div style="font-size:7px; font-weight:bold; margin-top:1mm;
-                                overflow:hidden; text-overflow:ellipsis;
-                                white-space:nowrap; max-width:28mm;">
-                        <t t-out="doc.name or 'Unknown'"/>
-                    </div>
-
-                    <!-- Price -->
-                    <div style="font-size:7px; margin-top:1mm;">
-                        <t t-out="doc.list_price" t-options='{"widget": "float", "precision": 2}'/>
-                        <t t-out="doc.currency_id.symbol or 'EGP'"/>
+                    <div style="font-size:6.5px; font-weight:bold; margin-top:0.5mm; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:35mm;">
+                        <t t-out="p['name']"/>
                     </div>
 
                 </div>
             </t>
         </t>
-    </template></odoo>
+    </template>
+</odoo>
