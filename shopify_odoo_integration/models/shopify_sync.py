@@ -1212,8 +1212,31 @@ class ShopifySync(models.Model):
         if journal:
             return journal
 
-        # 3. Fallback: first journal of any type
-        return Journal.search([], limit=1)
+        # 3. Fallback: first cash journal
+        journal = Journal.search([('type', '=', 'cash')], limit=1)
+        if journal:
+            return journal
+
+        # 4. Fallback: first general journal
+        journal = Journal.search([('type', '=', 'general')], limit=1)
+        if journal:
+            return journal
+
+        # 5. Fallback — first journal of any type
+        journal = Journal.search([], limit=1)
+        if journal:
+            return journal
+
+        # 6. Emergency: create a bank journal (must never return None)
+        _logger.warning(
+            "Shopify payment sync: no journal found — creating 'Shopify Bank' journal"
+        )
+        return Journal.create({
+            'name': 'Shopify Bank',
+            'type': 'bank',
+            'code': 'SHOP',
+            'company_id': self.env.company.id,
+        })
 
     # -----------------------------------------------------------------
     # Webhook handlers — update / cancel / paid / fulfilled
