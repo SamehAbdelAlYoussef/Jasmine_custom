@@ -90,4 +90,5 @@
         parent="sale.menu_sales_config"
         action="action_shopify_sync"
         sequence="31"/>
+
 </odoo>

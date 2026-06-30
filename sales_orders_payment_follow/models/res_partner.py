@@ -89,10 +89,10 @@ class Partner(models.Model):
         for rec in self:
             # import pdb;pdb.set_trace()
             paid_inbound_amount_so = self.env['account.payment'].search(
-                [('partner_id', '=', rec.id), ('state', '=', 'paid'), ('payment_type', '=', 'inbound'),('sale_order_id', '!=', False),]).mapped(
+                [('partner_id', '=', rec.id), ('state', 'in', ('in_process', 'paid')), ('payment_type', '=', 'inbound'),('sale_order_id', '!=', False),]).mapped(
                 'amount')
             paid_outbound_amount_so = self.env['account.payment'].search(
-                [('partner_id', '=', rec.id), ('state', '=', 'paid'), ('payment_type', '=', 'outbound'),('sale_order_id', '!=', False),]).mapped(
+                [('partner_id', '=', rec.id), ('state', 'in', ('in_process', 'paid')), ('payment_type', '=', 'outbound'),('sale_order_id', '!=', False),]).mapped(
                 'amount')
             rec.t_payments_so = sum(paid_inbound_amount_so)
             rec.t_refunds_so = sum(paid_outbound_amount_so)

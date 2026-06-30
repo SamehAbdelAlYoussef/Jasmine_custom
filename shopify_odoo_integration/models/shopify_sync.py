@@ -33,6 +33,7 @@ from datetime import timedelta
 import requests
 from dateutil import parser as dateutil_parser
 from dateutil.tz import UTC
+from psycopg2 import IntegrityError
 
 from odoo import fields, models, _
 from odoo.exceptions import UserError
@@ -106,6 +107,16 @@ class ShopifySync(models.Model):
     # -----------------------------------------------------------------
     def _get_config(self, key):
         return self.env['ir.config_parameter'].sudo().get_param(f'shopify.{key}')
+
+    def _get_api_base(self):
+        """Return the Shopify REST API base URL (https://<shop>/admin/api/<version>).
+
+        The API version is read from ``shopify.api_version`` config parameter,
+        defaulting to ``2024-10`` (the version used by the Yasmine Beauty Bar store).
+        """
+        shop = self._get_config('shop_url')
+        api_version = self._get_config('api_version') or '2024-10'
+        return f"https://{shop}/admin/api/{api_version}"
 
     def _get_shopify_headers(self):
         token = self._get_config('access_token')
@@ -250,7 +261,7 @@ class ShopifySync(models.Model):
                 },
             }
 
-        url = f"https://{shop}/admin/api/2024-01/orders/count.json"
+        url = f"{self._get_api_base()}/orders/count.json"
         headers = self._get_shopify_headers()
 
         try:
@@ -263,7 +274,7 @@ class ShopifySync(models.Model):
                 self._check_rate_limit(r.headers)
 
             r_shop = requests.get(
-                f"https://{shop}/admin/api/2024-01/shop.json",
+                f"{self._get_api_base()}/shop.json",
                 headers=headers, timeout=15,
             )
             shop_name = r_shop.json().get('shop', {}).get('name', shop)
@@ -357,7 +368,7 @@ class ShopifySync(models.Model):
             'last_error': False,
         })
 
-        base_url = f"https://{shop}/admin/api/2024-01/orders.json"
+        base_url = f"{self._get_api_base()}/orders.json"
         params = {'status': 'any', 'limit': 250}
 
         # Determine which URL to request
@@ -611,13 +622,53 @@ class ShopifySync(models.Model):
             pricelist = self.env['product.pricelist'].search([], limit=1)
 
         # ── Create sale.order (always starts as draft) ─────────────────
+        # Wrapped in IntegrityError try/except — a concurrent webhook or
+        # cron may have created the same order between the idempotency
+        # check above and this INSERT.  The DB UNIQUE constraint acts as
+        # the final arbiter.
         order_vals = self._prepare_sale_order_vals(
             order_data, partner, currency, pricelist,
         )
         order_vals['x_shopify_id'] = shopify_id
-        sale_order = SaleOrder.create(order_vals)
+        try:
+            sale_order = SaleOrder.create(order_vals)
+        except IntegrityError:
+            self.env.cr.rollback()
+            existing = SaleOrder.search(
+                [('x_shopify_id', '=', shopify_id)], limit=1,
+            )
+            if existing:
+                _logger.debug(
+                    "Shopify sync: order %s already imported (race), skip",
+                    order_number,
+                )
+                return {'status': 'skipped', 'sale_order_id': existing.id}
+            raise
+
+        # ── Order lines (BEFORE confirm — must exist before any
+        #    automation triggered by the state transition) ────────────
+        line_errors = 0
+        for item in order_data.get('line_items', []):
+            try:
+                self._create_order_line(sale_order, item)
+            except Exception as exc:
+                line_errors += 1
+                _logger.warning(
+                    "Shopify sync: line '%s' failed for order #%s — %s",
+                    item.get('title', '?'), order_number, exc,
+                )
+
+        # ── Shipping line (BEFORE confirm) ────────────────────────────
+        try:
+            self._create_shipping_line(sale_order, order_data)
+        except Exception as exc:
+            _logger.warning(
+                "Shopify sync: shipping line failed for #%s — %s",
+                order_number, exc,
+            )
 
         # ── Confirm if paid (draft → sale) ────────────────────────────
+        # Now that lines exist, confirming is safe.
         financial_status = order_data.get('financial_status', '')
         if financial_status == 'paid':
             try:
@@ -630,24 +681,13 @@ class ShopifySync(models.Model):
         # 'pending', 'partially_paid', 'refunded', 'voided', etc.
         # stay as draft — the user will review them manually.
 
-        # ── Order lines ──────────────────────────────────────────────
-        line_errors = 0
-        for item in order_data.get('line_items', []):
-            try:
-                self._create_order_line(sale_order, item)
-            except Exception as exc:
-                line_errors += 1
-                _logger.warning(
-                    "Shopify sync: line '%s' failed for order #%s — %s",
-                    item.get('title', '?'), order_number, exc,
-                )
-
-        # ── Shipping line ────────────────────────────────────────────
+        # ── Sync payments from Shopify transactions ──────────────────
+        # Always fetch transactions: paid → posted, pending → draft+note
         try:
-            self._create_shipping_line(sale_order, order_data)
+            self._fetch_and_sync_payments(sale_order, order_data)
         except Exception as exc:
             _logger.warning(
-                "Shopify sync: shipping line failed for #%s — %s",
+                "Shopify sync: payment sync failed for order #%s — %s",
                 order_number, exc,
             )
 
@@ -927,13 +967,19 @@ class ShopifySync(models.Model):
         })
 
     def _create_shipping_line(self, sale_order, shopify_order):
+        """Create a shipping line on the sale order.
+
+        Always creates a line when Shopify has shipping_lines, even when
+        the price is zero (free shipping).  The price from Shopify is
+        used as-is.
+        """
         shipping_lines = shopify_order.get('shipping_lines', [])
         if not shipping_lines:
             return None
+
         shipping = shipping_lines[0]
         price = float(shipping.get('price', 0.0))
-        if price <= 0.0:
-            return None
+        title = shipping.get('title', 'Shipping')
 
         Product = self.env['product.product']
         delivery = Product.search([('name', '=', 'Shopify Shipping')], limit=1)
@@ -945,13 +991,263 @@ class ShopifySync(models.Model):
                 'purchase_ok': False,
             })
 
+        label = f"Shipping: {title}" if price > 0.0 else f"Shipping: {title} (Free)"
+
         return self.env['sale.order.line'].create({
             'order_id': sale_order.id,
             'product_id': delivery.id,
             'product_uom_qty': 1,
             'price_unit': price,
-            'name': f"Shipping: {shipping.get('title', 'Shipping')}",
+            'name': label,
         })
+
+    # -----------------------------------------------------------------
+    # Payment / transaction sync
+    # -----------------------------------------------------------------
+    def _fetch_and_sync_payments(self, sale_order, order_data=None, shopify_order_id=None):
+        """Fetch Shopify transactions and create ``account.payment`` records.
+
+        Called after a sale order is created (if financial_status is
+        'paid' or 'partially_paid') and on the ``orders/paid`` webhook.
+
+        :param sale_order: ``sale.order`` record
+        :param order_data: dict — full Shopify order (optional, used to
+            extract ``order_number`` and ``financial_status``)
+        :param shopify_order_id: str — Shopify REST order ID (optional,
+            extracted from *order_data* if not provided)
+        """
+        if not order_data and not shopify_order_id:
+            shopify_order_id = sale_order.x_shopify_id
+
+        if order_data:
+            shopify_order_id = str(order_data['id'])
+
+        if not shopify_order_id:
+            _logger.info("Shopify payment sync: no Shopify order ID for SO %s",
+                        sale_order.name)
+            return False
+
+        api_base = self._get_api_base()
+        if '/admin/api/' not in api_base:
+            _logger.info("Shopify payment sync: shop_url not configured")
+            return False
+
+        txn_url = f"{api_base}/orders/{shopify_order_id}/transactions.json"
+        _logger.info("Shopify payment sync: fetching %s", txn_url)
+
+        try:
+            resp = requests.get(
+                txn_url, headers=self._get_shopify_headers(), timeout=30,
+            )
+            resp.raise_for_status()
+            self._check_rate_limit(resp.headers)
+        except requests.exceptions.RequestException as exc:
+            _logger.info("Shopify payment sync: API error for order #%s — %s",
+                        shopify_order_id, exc)
+            return False
+
+        transactions = resp.json().get('transactions', [])
+        if not transactions:
+            _logger.info("Shopify payment sync: no transactions for order #%s",
+                        shopify_order_id)
+            return False
+
+        Payment = self.env['account.payment']
+        created_count = 0
+        pending_count = 0
+
+        for txn in transactions:
+            kind = txn.get('kind', '')
+            status = txn.get('status', '')
+
+            # Only process sale/capture/refund transactions
+            if kind not in ('sale', 'capture', 'refund'):
+                continue
+
+            txn_id = str(txn['id'])
+            gateway = txn.get('gateway', '')
+            amount = txn.get('amount', '0')
+            message = txn.get('message', '')
+
+            # ── Idempotency check ──────────────────────────────────
+            existing_payment = Payment.search(
+                [('x_shopify_txn_id', '=', txn_id)], limit=1,
+            )
+            if existing_payment:
+                # If previously pending (draft) → now success, post it
+                if status == 'success' and existing_payment.state == 'draft':
+                    try:
+                        existing_payment.action_post()
+                        existing_payment.sudo().write({'state': 'paid'})
+                        _logger.info(
+                            "Shopify payment sync: txn %s moved draft→paid "
+                            "(COD now paid)", txn_id,
+                        )
+                    except Exception as exc:
+                        _logger.warning(
+                            "Shopify payment sync: failed to post draft txn %s — %s",
+                            txn_id, exc,
+                        )
+                else:
+                    _logger.debug(
+                        "Shopify payment sync: txn %s already imported, skip", txn_id,
+                    )
+                continue
+
+            # ── Determine payment type ──────────────────────────────
+            if kind == 'refund':
+                payment_type = 'outbound'
+            else:
+                payment_type = 'inbound'
+
+            # ── Handle by status ────────────────────────────────────
+            if status == 'success':
+                # Completed payment → create + post + mark paid
+                try:
+                    vals = self._prepare_payment_vals(
+                        txn, sale_order, sale_order.partner_id, payment_type,
+                    )
+                    payment = Payment.create(vals)
+                    payment.action_post()
+                    # Force state to 'paid' — Shopify confirms the money is received
+                    payment.sudo().write({'state': 'paid'})
+                    created_count += 1
+                    _logger.info(
+                        "Shopify payment sync: paid payment %s for SO %s "
+                        "(txn=%s, amount=%s, type=%s)",
+                        payment.name, sale_order.name, txn_id,
+                        amount, payment_type,
+                    )
+                except Exception as exc:
+                    _logger.warning(
+                        "Shopify payment sync: failed to create payment for "
+                        "txn %s — %s", txn_id, exc,
+                    )
+
+            elif status == 'pending':
+                # Pending payment (e.g. COD) → create draft + post note
+                try:
+                    vals = self._prepare_payment_vals(
+                        txn, sale_order, sale_order.partner_id, payment_type,
+                    )
+                    payment = Payment.create(vals)
+                    # Leave as draft — not posted yet
+                    pending_count += 1
+
+                    # Post note on sale order with pending details
+                    note = (
+                        f"⏳ Payment Pending — {gateway}\n"
+                        f"Amount: {amount}\n"
+                        f"Status: {status}\n"
+                        f"Shopify Txn: {txn_id}"
+                    )
+                    if message:
+                        note += f"\nMessage: {message}"
+                    sale_order.message_post(body=note)
+
+                    _logger.info(
+                        "Shopify payment sync: draft payment %s for SO %s "
+                        "(txn=%s, amount=%s, pending COD)",
+                        payment.name, sale_order.name, txn_id, amount,
+                    )
+                except Exception as exc:
+                    _logger.warning(
+                        "Shopify payment sync: failed to create pending payment "
+                        "for txn %s — %s", txn_id, exc,
+                    )
+
+        if created_count > 0 or pending_count > 0:
+            if created_count > 0:
+                sale_order.x_shopify_payment_synced = True
+            # Invalidate computed fields so so_payments / amount_paid_percent
+            # refresh immediately in the UI after sync.
+            sale_order.invalidate_recordset([
+                'so_payments', 'so_refunds', 'so_remaining',
+                'amount_paid_percent', 'near_confirm_threshold',
+            ])
+            _logger.info(
+                "Shopify payment sync: %d posted + %d pending for SO %s",
+                created_count, pending_count, sale_order.name,
+            )
+
+        return created_count > 0 or pending_count > 0
+
+    def _prepare_payment_vals(self, transaction, sale_order, partner, payment_type):
+        """Build ``account.payment`` vals from a Shopify transaction.
+
+        :param transaction: dict — Shopify transaction object
+        :param sale_order: ``sale.order`` record
+        :param partner: ``res.partner`` record
+        :param payment_type: str — 'inbound' or 'outbound'
+        :returns: dict of field values for ``account.payment.create()``
+        """
+        gateway = transaction.get('gateway', '')
+        amount = float(transaction.get('amount', 0.0))
+        currency_code = transaction.get('currency', 'USD').upper()
+
+        currency = self.env['res.currency'].search(
+            [('name', '=', currency_code)], limit=1,
+        ) or self.env.company.currency_id
+
+        journal = self._get_payment_journal(gateway)
+
+        order_number = sale_order.client_order_ref or sale_order.x_shopify_id
+        ref = f"Shopify Order #{order_number} — {gateway}"
+
+        # Parse the transaction date
+        date_str = transaction.get('processed_at') or transaction.get('created_at')
+        payment_date = fields.Datetime.now()
+        if date_str:
+            try:
+                aware = dateutil_parser.isoparse(date_str)
+                payment_date = aware.astimezone(UTC).replace(tzinfo=None)
+            except (ValueError, TypeError):
+                pass
+
+        return {
+            'partner_id': partner.id,
+            'sale_order_id': sale_order.id,
+            'amount': amount,
+            'currency_id': currency.id,
+            'payment_type': payment_type,
+            'partner_type': 'customer',
+            'journal_id': journal.id,
+            'date': payment_date,
+            'memo': ref,
+            'x_shopify_txn_id': str(transaction['id']),
+            'x_shopify_gateway': gateway,
+        }
+
+    def _get_payment_journal(self, gateway_name):
+        """Map a Shopify payment gateway to an Odoo ``account.journal``.
+
+        Defaults to the first **bank** journal.  Override per gateway via
+        config parameter ``shopify.journal.<slug>`` (set the journal ID).
+
+        :param gateway_name: str — e.g. "Cash on Delivery (COD)", "Geidea Pay", "Paymob"
+        :returns: ``account.journal`` record
+        """
+        Journal = self.env['account.journal']
+
+        # 1. Config parameter override (set journal ID per gateway)
+        slug = gateway_name.lower().replace(' ', '_').replace('(', '').replace(')', '')
+        config_key = f'shopify.journal.{slug}'
+        journal_id = self._get_config(config_key)
+        if journal_id:
+            try:
+                journal = Journal.browse(int(journal_id))
+                if journal.exists():
+                    return journal
+            except (ValueError, TypeError):
+                pass
+
+        # 2. Default: first bank journal
+        journal = Journal.search([('type', '=', 'bank')], limit=1)
+        if journal:
+            return journal
+
+        # 3. Fallback: first journal of any type
+        return Journal.search([], limit=1)
 
     # -----------------------------------------------------------------
     # Webhook handlers — update / cancel / paid / fulfilled
@@ -961,6 +1257,10 @@ class ShopifySync(models.Model):
 
         Updates: order lines, shipping, financial status, and totals.
         If the sale.order doesn't exist yet, falls back to creating it.
+
+        Webhook deduplication: Shopify may fire the same webhook multiple
+        times within seconds.  We track ``webhook_last_processed`` per
+        order and skip re-processing within a 60-second window.
         """
         shopify_id = str(order_data['id'])
         order_ref = order_data.get('order_number', shopify_id)
@@ -972,6 +1272,19 @@ class ShopifySync(models.Model):
                 "Shopify webhook: update for #%s but SO not found, creating", order_ref,
             )
             return self._process_single_order(order_data)
+
+        # ── Webhook dedup guard ────────────────────────────────────────
+        now = fields.Datetime.now()
+        if existing.webhook_last_processed:
+            delta = now - existing.webhook_last_processed
+            if delta.total_seconds() < 60:
+                _logger.debug(
+                    "Shopify webhook: update for #%s skipped "
+                    "(last processed %.0fs ago)",
+                    order_ref, delta.total_seconds(),
+                )
+                return {'status': 'skipped', 'sale_order_id': existing.id}
+        existing.webhook_last_processed = now
 
         # -- update line items (remove old, recreate) --------------------
         try:
@@ -1087,6 +1400,15 @@ class ShopifySync(models.Model):
                     "Shopify webhook: confirm failed for SO %s — %s",
                     existing.name, exc,
                 )
+
+        # ── Sync payments from Shopify transactions ──────────────────
+        try:
+            self._fetch_and_sync_payments(existing, order_data)
+        except Exception as exc:
+            _logger.warning(
+                "Shopify webhook: payment sync failed for SO %s — %s",
+                existing.name, exc,
+            )
 
         existing.message_post(body="Payment confirmed in Shopify — marked as invoiced")
         _logger.info(

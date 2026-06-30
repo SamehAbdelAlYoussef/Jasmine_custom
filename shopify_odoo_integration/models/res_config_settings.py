@@ -21,6 +21,13 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='shopify.access_token',
         help="Shopify Admin API access token",
     )
+    shopify_api_version = fields.Char(
+        string='Shopify API Version',
+        config_parameter='shopify.api_version',
+        default='2024-10',
+        help="Shopify REST Admin API version (e.g. 2024-10, 2025-01). "
+             "Default: 2024-10",
+    )
 
     def action_test_shopify_connection(self):
         """Test Shopify API connection from settings."""
@@ -40,7 +47,8 @@ class ResConfigSettings(models.TransientModel):
                 }
             }
 
-        url = f"https://{shop}/admin/api/2024-01/shop.json"
+        api_version = self.shopify_api_version or ICP.get_param('shopify.api_version') or '2024-10'
+        url = f"https://{shop}/admin/api/{api_version}/shop.json"
         headers = {
             'X-Shopify-Access-Token': token,
             'Content-Type': 'application/json',

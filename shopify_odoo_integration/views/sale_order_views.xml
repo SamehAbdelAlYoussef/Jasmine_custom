@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── Sale Order Tree: Add Shopify ID column ────────────────────── -->
+    <record id="view_order_tree_shopify" model="ir.ui.view">
+        <field name="name">sale.order.tree.shopify</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="client_order_ref" position="after">
+                <field name="x_shopify_id"
+                       string="Shopify"
+                       optional="hide"
+                       groups="base.group_system"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- ── Sale Order Form: Shopify Sync Button ──────────────────────── -->
+    <record id="view_order_form_shopify" model="ir.ui.view">
+        <field name="name">sale.order.form.shopify</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Button in header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_sync_shopify_payments"
+                        type="object"
+                        string="Sync Shopify Payments"
+                        class="btn-secondary"
+                        help="Fetch transactions from Shopify and create payments"/>
+            </xpath>
+
+            <!-- Shopify fields -->
+            <field name="client_order_ref" position="after">
+                <field name="x_shopify_id"
+                       string="Shopify ID"
+                       readonly="1"
+                       groups="base.group_system"/>
+                <field name="x_shopify_payment_synced" invisible="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>

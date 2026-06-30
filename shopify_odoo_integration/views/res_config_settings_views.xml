@@ -25,6 +25,14 @@
                         >
                             <field name="shopify_access_token" placeholder="shpat_..." password="True"/>
                         </setting>
+                        <setting
+                            id="shopify_api_version_setting"
+                            string="API Version"
+                            help="Shopify REST Admin API version (e.g. 2024-10, 2025-01)"
+                            title="The API version determines which Shopify API features are available."
+                        >
+                            <field name="shopify_api_version" placeholder="2024-10"/>
+                        </setting>
                         <div class="mt-3 text-center">
                             <button
                                 name="action_sync_orders_from_settings"

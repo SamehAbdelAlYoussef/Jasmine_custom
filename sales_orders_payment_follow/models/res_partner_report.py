@@ -40,7 +40,7 @@ class Partner(models.Model):
             [
                 ('partner_id', 'in', partners.ids),
                 ('sale_order_id', '!=', False),
-                ('state', '=', 'paid'),
+                ('state', 'in', ('in_process', 'paid')),
                 ('payment_type', '=', 'inbound'),
             ],
             ['partner_id'],
@@ -48,12 +48,12 @@ class Partner(models.Model):
         )
         pay_map = {g[0][0]: g[1] for g in pay_grp if g[0]}
 
-        # 3) refunds assigned to SOs (paid outbound)
+        # 3) refunds assigned to SOs (in_process/paid outbound)
         ref_grp = APL._read_group(
             [
                 ('partner_id', 'in', partners.ids),
                 ('sale_order_id', '!=', False),
-                ('state', '=', 'paid'),
+                ('state', 'in', ('in_process', 'paid')),
                 ('payment_type', '=', 'outbound'),
             ],
             ['partner_id'],
@@ -66,7 +66,7 @@ class Partner(models.Model):
             [
                 ('partner_id', 'in', partners.ids),
                 ('sale_order_id', '=', False),
-                ('state', '=', 'paid'),
+                ('state', 'in', ('in_process', 'paid')),
                 ('payment_type', '=', 'inbound'),
             ],
             ['partner_id'],
@@ -79,7 +79,7 @@ class Partner(models.Model):
             [
                 ('partner_id', 'in', partners.ids),
                 ('sale_order_id', '=', False),
-                ('state', '=', 'paid'),
+                ('state', 'in', ('in_process', 'paid')),
                 ('payment_type', '=', 'outbound'),
             ],
             ['partner_id'],

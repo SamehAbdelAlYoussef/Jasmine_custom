@@ -1,0 +1,235 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* product_barcode_stars
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-30 14:40+0000\n"
+"PO-Revision-Date: 2026-06-30 14:40+0000\n"
+"Last-Translator: Sameh AbdelAl\n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: product_barcode_stars
+#: model:ir.actions.report,print_report_name:product_barcode_stars.action_report_product_barcode_label
+msgid "'Barcode - %s' % (object.display_name)"
+msgstr "'باركود - %s' % (object.display_name)"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields.selection,name:product_barcode_stars.selection__res_partner__rating_stars__1
+msgid "1 Star"
+msgstr "نجمة واحدة"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields.selection,name:product_barcode_stars.selection__res_partner__rating_stars__2
+msgid "2 Stars"
+msgstr "نجمتان"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields.selection,name:product_barcode_stars.selection__res_partner__rating_stars__3
+msgid "3 Stars"
+msgstr "٣ نجوم"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_form_inherit_qr
+msgid ""
+"<strong>Format:</strong> [Category Number] [Vendor Initials] [Sequence]\n"
+"                        <br/>\n"
+"                        <strong>Example:</strong> 01AN00001 = Category(01) + Vendor Al-Nahar(AN) + Seq(00001)"
+msgstr ""
+"<strong>الصيغة:</strong> [رقم الفئة] [أحرف المورد الأولى] [التسلسل]\n"
+"                        <br/>\n"
+"                        <strong>مثال:</strong> 01AN00001 = فئة(01) + مورد النهار(AN) + تسلسل(00001)"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_category_form_inherit_qr
+msgid "Auto-generated"
+msgstr "تلقائي"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_template__barcode
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_form_inherit_qr
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_search_inherit_qr
+msgid "Barcode"
+msgstr "باركود"
+
+#. module: product_barcode_stars
+#. odoo-python
+#: code:addons/product_barcode_stars/models/ir_qweb_field_barcode.py:0
+msgid "Barcode %s"
+msgstr "باركود %s"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_product__barcode_image
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_template__barcode_image
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_form_inherit_qr
+msgid "Barcode Image"
+msgstr "صورة الباركود"
+
+#. module: product_barcode_stars
+#: model:ir.actions.report,name:product_barcode_stars.action_report_product_barcode_label
+msgid "Barcode Label"
+msgstr "ملصق الباركود"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_form_inherit_qr
+msgid "Barcode Structure"
+msgstr "هيكل الباركود"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_category__category_number
+msgid "Category Number"
+msgstr "رقم الفئة"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_res_partner
+msgid "Contact"
+msgstr "جهة الاتصال"
+
+#. module: product_barcode_stars
+#: model:ir.model,website_form_label:product_barcode_stars.model_res_partner
+msgid "Create a Customer"
+msgstr "إنشاء عميل"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_partner_form_inherit_stars_design
+msgid "Customer Rating:"
+msgstr "تقييم العميل:"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_res_partner__rating_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_res_users__rating_stars
+msgid "Customer Stars"
+msgstr "نجوم العميل"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_ir_actions_report__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_ir_qweb_field_barcode__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_category__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_product__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_supplierinfo__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_template__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_res_partner__display_name
+#: model:ir.model.fields,field_description:product_barcode_stars.field_sale_order__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_form_inherit_qr
+msgid "Generate Barcode"
+msgstr "إنشاء باركود"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_search_inherit_qr
+msgid "Has Barcode"
+msgstr "لديه باركود"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,field_description:product_barcode_stars.field_ir_actions_report__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_ir_qweb_field_barcode__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_category__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_product__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_supplierinfo__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_product_template__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_res_partner__id
+#: model:ir.model.fields,field_description:product_barcode_stars.field_sale_order__id
+msgid "ID"
+msgstr "المُعرف"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,help:product_barcode_stars.field_res_partner__rating_stars
+#: model:ir.model.fields,help:product_barcode_stars.field_res_users__rating_stars
+msgid "Loyalty stars based on confirmed sale orders (max 3)."
+msgstr "نجوم الولاء بناءً على أوامر البيع المؤكدة (الحد الأقصى ٣)."
+
+#. module: product_barcode_stars
+#: model:ir.model.fields.selection,name:product_barcode_stars.selection__res_partner__rating_stars__0
+msgid "No Stars"
+msgstr "لا يوجد نجوم"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_product_template
+msgid "Product"
+msgstr "المنتج"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_product_category
+msgid "Product Category"
+msgstr "فئة المنتج"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_product_product
+msgid "Product Variant"
+msgstr "متغير المنتج"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_ir_qweb_field_barcode
+msgid "Qweb Field Barcode"
+msgstr "باركود حقل QWeb"
+
+#. module: product_barcode_stars
+#: model_terms:ir.ui.view,arch_db:product_barcode_stars.view_product_template_form_inherit_qr
+msgid "Regenerate"
+msgstr "إعادة إنشاء"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_ir_actions_report
+msgid "Report Action"
+msgstr "إجراء التقرير"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_sale_order
+msgid "Sales Order"
+msgstr "أمر البيع"
+
+#. module: product_barcode_stars
+#: model:ir.model,name:product_barcode_stars.model_product_supplierinfo
+msgid "Supplier Pricelist"
+msgstr "قائمة أسعار المورد"
+
+#. module: product_barcode_stars
+#: model:ir.model.fields,help:product_barcode_stars.field_product_category__category_number
+msgid "Unique numeric code for this category (used in product QR codes)"
+msgstr "رمز رقمي فريد لهذه الفئة (يُستخدم في رموز QR للمنتج)"
+
+#. module: product_barcode_stars
+#. odoo-python
+#: code:addons/product_barcode_stars/models/product_product.py:0
+msgid ""
+"تم إنشاء %(count)s باركود بنجاح مع أول حرفين من اسم المورد (عربي → إنجليزي)."
+msgstr ""
+"تم إنشاء %(count)s باركود بنجاح مع أول حرفين من اسم المورد (عربي → إنجليزي)."
+
+#. module: product_barcode_stars
+#. odoo-python
+#: code:addons/product_barcode_stars/models/product_product.py:0
+msgid "تم تحديث %(count)s باركود — البادئة فقط، رقم التسلسل ثابت."
+msgstr "تم تحديث %(count)s باركود — البادئة فقط، رقم التسلسل ثابت."
+
+#. module: product_barcode_stars
+#. odoo-python
+#: code:addons/product_barcode_stars/models/res_partner.py:0
+msgid ""
+"مبروك! لقد وصلت إلى مستوى %(stars)s نجوم 🌟 تقديراً لثقتك بنا. شكراً لكونك "
+"عميلاً مميزاً!"
+msgstr ""
+"مبروك! لقد وصلت إلى مستوى %(stars)s نجوم 🌟 تقديراً لثقتك بنا. شكراً لكونك "
+"عميلاً مميزاً!"
+
+#. module: product_barcode_stars
+#. odoo-python
+#: code:addons/product_barcode_stars/models/product_product.py:0
+msgid "✅ باركود تم إنشاؤه"
+msgstr "✅ باركود تم إنشاؤه"
+
+#. module: product_barcode_stars
+#. odoo-python
+#: code:addons/product_barcode_stars/models/product_product.py:0
+msgid "✅ تم تحديث الباركود"
+msgstr "✅ تم تحديث الباركود"

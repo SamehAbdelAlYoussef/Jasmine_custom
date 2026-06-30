@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── Account Payment List: Add Shopify columns ────────────────── -->
+    <record id="view_account_payment_list_shopify" model="ir.ui.view">
+        <field name="name">account.payment.list.shopify</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="x_shopify_txn_id"
+                       string="Shopify Txn"
+                       optional="hide"
+                       groups="base.group_system"/>
+                <field name="x_shopify_gateway"
+                       string="Shopify Gateway"
+                       optional="hide"
+                       groups="base.group_system"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- ── Account Payment Form: Show Shopify Fields ─────────────────── -->
+    <record id="view_account_payment_form_shopify" model="ir.ui.view">
+        <field name="name">account.payment.form.shopify</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sale_order_id']" position="after">
+                <field name="x_shopify_txn_id"
+                       string="Shopify Txn ID"
+                       invisible="not x_shopify_txn_id"
+                       groups="base.group_system"/>
+                <field name="x_shopify_gateway"
+                       string="Shopify Gateway"
+                       invisible="not x_shopify_gateway"
+                       groups="base.group_system"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

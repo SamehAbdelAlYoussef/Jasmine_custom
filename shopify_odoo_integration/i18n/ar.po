@@ -1,0 +1,423 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* shopify_odoo_integration
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-30 14:37+0000\n"
+"PO-Revision-Date: 2026-06-30 14:37+0000\n"
+"Last-Translator: Sameh AbdelAl\n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "API Connection"
+msgstr "اتصال API"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "API Version"
+msgstr "إصدار API"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "Access Token"
+msgstr "رمز الوصول"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_shopify_sync__locked_until
+msgid "Advisory lock — prevents overlapping sync runs."
+msgstr "قفل استشاري — يمنع تشغيل مزامنات متداخلة."
+
+#. module: shopify_odoo_integration
+#. odoo-python
+#: code:addons/shopify_odoo_integration/models/shopify_sync.py:0
+msgid "Another sync is already running (locked until %(time)s)."
+msgstr "توجد مزامنة أخرى قيد التشغيل (مقفولة حتى %(time)s)."
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__batch_cursor
+msgid "Batch Cursor"
+msgstr "مؤشر الدفعة"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields.selection,name:shopify_odoo_integration.selection__shopify_sync__sync_state__completed
+msgid "Completed"
+msgstr "مكتمل"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields.selection,name:shopify_odoo_integration.selection__shopify_sync__sync_state__completed_with_errors
+msgid "Completed (with errors)"
+msgstr "مكتمل (مع أخطاء)"
+
+#. module: shopify_odoo_integration
+#: model:ir.model,name:shopify_odoo_integration.model_res_config_settings
+msgid "Config Settings"
+msgstr "تهيئة الإعدادات"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__create_uid
+msgid "Created by"
+msgstr "أنشئ بواسطة"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__create_date
+msgid "Created on"
+msgstr "أنشئ في"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_account_payment__display_name
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_sale_order__display_name
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields.selection,name:shopify_odoo_integration.selection__shopify_sync__sync_state__failed
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_tree
+msgid "Failed"
+msgstr "فشل"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_order_form_shopify
+msgid "Fetch transactions from Shopify and create payments"
+msgstr "جلب المعاملات من Shopify وإنشاء المدفوعات"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_tree
+msgid "Fetched"
+msgstr "تم الجلب"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields.selection,name:shopify_odoo_integration.selection__shopify_sync__sync_state__fetching
+msgid "Fetching & Processing"
+msgstr "جارٍ الجلب والمعالجة"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid ""
+"Generate from Shopify Admin → Settings → Apps and sales channels → Develop "
+"apps."
+msgstr "يُنشأ من متجر Shopify ← الإعدادات ← التطبيقات ← تطوير التطبيقات"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_sale_order__x_shopify_id
+msgid ""
+"Globally-unique Shopify order ID (GraphQL / REST ID). Used by the sync "
+"engine to prevent duplicate imports."
+msgstr "معرّف طلب Shopify الفريد عالميًا. يُستخدم بواسطة محرك المزامنة لمنع تكرار الاستيراد."
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_account_payment__x_shopify_txn_id
+msgid ""
+"Globally-unique Shopify transaction ID.  Used by the sync engine to prevent "
+"duplicate payment imports."
+msgstr "معرّف معاملة Shopify الفريد عالميًا. يُستخدم بواسطة محرك المزامنة لمنع تكرار استيراد المدفوعات."
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_shopify_sync__last_sync_id
+msgid ""
+"Highest Shopify REST order ID that has been **fully committed** to the "
+"database (page boundary).  Used to resume incremental syncs safely."
+msgstr "أعلى معرّف طلب Shopify تم **حفظه بالكامل** في قاعدة البيانات. يُستخدم لاستئناف المزامنات التزايدية بأمان."
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_account_payment__id
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_res_config_settings__id
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_sale_order__id
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__id
+msgid "ID"
+msgstr "المُعرف"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields.selection,name:shopify_odoo_integration.selection__shopify_sync__sync_state__idle
+msgid "Idle"
+msgstr "خامل"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__last_error
+msgid "Last Error"
+msgstr "آخر خطأ"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__last_sync_id
+msgid "Last Synced Order ID"
+msgstr "آخر معرّف طلب تمت مزامنته"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__write_uid
+msgid "Last Updated by"
+msgstr "آخر تحديث بواسطة"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__write_date
+msgid "Last Updated on"
+msgstr "آخر تحديث في"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_sale_order__webhook_last_processed
+msgid "Last Webhook Processed"
+msgstr "آخر Webhook تمت معالجته"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__locked_until
+msgid "Locked Until"
+msgstr "مقفول حتى"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__name
+msgid "Name"
+msgstr "الاسم"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__orders_failed
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Orders Failed"
+msgstr "الطلبات الفاشلة"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Orders Fetched"
+msgstr "الطلبات التي تم جلبها"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__last_sync_count
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__orders_total
+msgid "Orders Fetched from API"
+msgstr "الطلبات التي تم جلبها من API"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__orders_processed
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Orders Processed"
+msgstr "الطلبات المُعالجة"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_account_payment__x_shopify_gateway
+msgid ""
+"Original Shopify payment gateway name (e.g. 'Geidea Pay', 'Cash on Delivery "
+"(COD)', 'Paymob')."
+msgstr "اسم بوابة الدفع الأصلية في Shopify (مثل Geidea Pay، الدفع عند الاستلام، Paymob)."
+
+#. module: shopify_odoo_integration
+#: model:ir.model,name:shopify_odoo_integration.model_account_payment
+msgid "Payments"
+msgstr "الدفعات"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_tree
+msgid "Processed"
+msgstr "تمت المعالجة"
+
+#. module: shopify_odoo_integration
+#: model:ir.model,name:shopify_odoo_integration.model_sale_order
+msgid "Sales Order"
+msgstr "أمر البيع"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_order_tree_shopify
+msgid "Shopify"
+msgstr "شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_res_config_settings__shopify_api_version
+msgid "Shopify API Version"
+msgstr "إصدار API شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_res_config_settings__shopify_access_token
+msgid "Shopify Access Token"
+msgstr "رمز الوصول لشوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_res_config_settings__shopify_access_token
+msgid "Shopify Admin API access token"
+msgstr "رمز الوصول لواجهة API الإدارية لشوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "Shopify Admin API access token for authentication"
+msgstr "رمز وصول API الإدارة لشوبيفاي للمصادقة"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_account_payment__x_shopify_gateway
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_account_payment_form_shopify
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_account_payment_list_shopify
+msgid "Shopify Gateway"
+msgstr "بوابة الدفع شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_order_form_shopify
+msgid "Shopify ID"
+msgstr "معرّف شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_sale_order__x_shopify_id
+msgid "Shopify Order ID"
+msgstr "معرّف طلب شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model,name:shopify_odoo_integration.model_shopify_sync
+msgid "Shopify Order Sync"
+msgstr "مزامنة طلبات شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_sale_order__x_shopify_payment_synced
+msgid "Shopify Payments Synced"
+msgstr "تمت مزامنة مدفوعات شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "Shopify REST Admin API version (e.g. 2024-10, 2025-01)"
+msgstr "إصدار API REST الإداري لشوبيفاي (مثال: 2024-10، 2025-01)"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_res_config_settings__shopify_api_version
+msgid ""
+"Shopify REST Admin API version (e.g. 2024-10, 2025-01). Default: 2024-10"
+msgstr "إصدار API REST الإداري لشوبيفاي (مثال: 2024-10، 2025-01). الإفتراضي: 2024-10"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_res_config_settings__shopify_shop_url
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "Shopify Shop URL"
+msgstr "رابط متجر شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.actions.act_window,name:shopify_odoo_integration.action_shopify_sync
+#: model:ir.ui.menu,name:shopify_odoo_integration.menu_shopify_sync
+msgid "Shopify Sync"
+msgstr "مزامنة شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_account_payment__x_shopify_txn_id
+msgid "Shopify Transaction ID"
+msgstr "معرّف معاملة شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_account_payment_list_shopify
+msgid "Shopify Txn"
+msgstr "معاملة شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_account_payment_form_shopify
+msgid "Shopify Txn ID"
+msgstr "معرّف معاملة شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_shopify_sync__batch_cursor
+msgid ""
+"Shopify page_info URL for resuming full-sync pagination across cron "
+"invocations.  Set to the ``next`` URL from the Link header after each page."
+msgstr "رابط page_info الخاص بشوبيفاي لاستئناف التصفح عبر استدعاءات cron. يتم تعيينه من رابط ``next`` في ترويسة Link بعد كل صفحة."
+
+#. module: shopify_odoo_integration
+#: model:ir.actions.server,name:shopify_odoo_integration.ir_cron_shopify_order_sync_ir_actions_server
+msgid "Shopify: Resume Stuck Syncs"
+msgstr "شوبيفاي: استئناف المزامنات العالقة"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Start Sync (Background)"
+msgstr "بدء المزامنة (خلفية)"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_shopify_sync__orders_processed
+msgid "Successfully created / updated sale orders so far."
+msgstr "أوامر البيع التي تم إنشاؤها/تحديثها بنجاح حتى الآن."
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Sync Job Name"
+msgstr "اسم مهمة المزامنة"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Sync Now (Blocking)"
+msgstr "مزامنة الآن (انتظار)"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "Sync Orders Now"
+msgstr "مزامنة الطلبات الآن"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Sync Progress"
+msgstr "تقدم المزامنة"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_order_form_shopify
+msgid "Sync Shopify Payments"
+msgstr "مزامنة مدفوعات شوبيفاي"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,field_description:shopify_odoo_integration.field_shopify_sync__sync_state
+msgid "Sync State"
+msgstr "حالة المزامنة"
+
+#. module: shopify_odoo_integration
+#. odoo-python
+#: code:addons/shopify_odoo_integration/models/shopify_sync.py:0
+msgid "Sync is already running."
+msgstr "المزامنة قيد التشغيل بالفعل."
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "Test Connection"
+msgstr "اختبار الاتصال"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "The API version determines which Shopify API features are available."
+msgstr "إصدار API يحدد ميزات Shopify API المتاحة."
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "The base URL of your Shopify store, used to build API endpoints."
+msgstr "الرابط الأساسي لمتجرك في Shopify، يُستخدم لبناء نقاط نهاية API."
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.view_shopify_sync_form
+msgid "This will fetch and process all orders synchronously. Continue?"
+msgstr "سيتم جلب ومعالجة جميع الطلبات بشكل متزامن. هل تريد المتابعة؟"
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_sale_order__webhook_last_processed
+msgid ""
+"Timestamp of the last webhook event processed for this order. Used to "
+"deduplicate rapid-fire webhooks from Shopify."
+msgstr "الطابع الزمني لآخر حدث webhook تمت معالجته لهذا الطلب. يُستخدم لمنع تكرار webhooks المتتالية من Shopify."
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_sale_order__x_shopify_payment_synced
+msgid ""
+"Whether Shopify transactions have been fetched and synced as account.payment"
+" records for this order."
+msgstr "ما إذا تم جلب معاملات Shopify ومزامنتها كسجلات دفعات لهذا الطلب."
+
+#. module: shopify_odoo_integration
+#: model:ir.model.fields,help:shopify_odoo_integration.field_res_config_settings__shopify_shop_url
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "Your Shopify store domain (e.g. mystore.myshopify.com)"
+msgstr "نطاق متجرك في Shopify (مثال: mystore.myshopify.com)"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "mystore.myshopify.com"
+msgstr "mystore.myshopify.com"
+
+#. module: shopify_odoo_integration
+#: model_terms:ir.ui.view,arch_db:shopify_odoo_integration.res_config_settings_view_form_inherit
+msgid "shpat_..."
+msgstr "shpat_..."

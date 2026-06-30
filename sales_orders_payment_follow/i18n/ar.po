@@ -1,0 +1,329 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sales_orders_payment_follow
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-30 14:39+0000\n"
+"PO-Revision-Date: 2026-06-30 14:39+0000\n"
+"Last-Translator: Sameh AbdelAl\n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_order_form_inherit_warning_sp
+msgid "%. Minimum required to confirm:"
+msgstr "%الحد الأدنى المطلوب للتأكيد:"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_partner_form_sp
+msgid "<span class=\"o_stat_text\">Customer Payments</span>"
+msgstr "<span class=\"o_stat_text\">مدفوعات العميل</span>"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_partner_form_sp
+msgid "<span class=\"o_stat_text\">Customer Refunds</span>"
+msgstr "<span class=\"o_stat_text\">مبالغ مستردة للعميل</span>"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_partner_form_sp
+msgid "<span class=\"o_stat_text\">Customer Remaining</span>"
+msgstr "<span class=\"o_stat_text\">المتبقي للعميل</span>"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_partner_form_sp
+msgid "<span class=\"o_stat_text\">Total SO</span>"
+msgstr "<span class=\"o_stat_text\">إجمالي أوامر البيع</span>"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_order_form_inherit_warning_sp
+msgid "<strong>Payment Notice:</strong>"
+msgstr "<strong>إشعار الدفع:</strong>"
+
+#. module: sales_orders_payment_follow
+#: model:ir.module.category,description:sales_orders_payment_follow.module_category_sales_orders_payment_follow
+msgid "Access rights for Sales Orders Payment Follow"
+msgstr "صلاحيات الوصول لمتابعة مدفوعات أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/sale_order.py:0
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_order_form_inherit_buttons_sp
+msgid "Advance Payment"
+msgstr "دفعة مقدمة"
+
+#. module: sales_orders_payment_follow
+#: model:res.groups,name:sales_orders_payment_follow.group_modify_confirm_percent
+msgid "Allow to modify SO confirm percent"
+msgstr "السماح بتعديل نسبة تأكيد أمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:res.groups,name:sales_orders_payment_follow.group_readonly_confirm_percent
+msgid "Allow to read only SO confirm percent"
+msgstr "السماح بقراءة نسبة تأكيد أمر البيع فقط"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__confirm_on_percent
+msgid "Confirm On (%)"
+msgstr "التأكيد عند (%)"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model,name:sales_orders_payment_follow.model_res_partner
+msgid "Contact"
+msgstr "جهة الاتصال"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model,website_form_label:sales_orders_payment_follow.model_res_partner
+msgid "Create a Customer"
+msgstr "إنشاء عميل"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/cust_sbuttons_actions.py:0
+msgid "Customer Payments"
+msgstr "مدفوعات العميل"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/cust_sbuttons_actions.py:0
+msgid "Customer Refunds"
+msgstr "مبالغ مستردة للعميل"
+
+#. module: sales_orders_payment_follow
+#: model:ir.actions.act_window,name:sales_orders_payment_follow.action_customers_payments_follow
+#: model:ir.ui.menu,name:sales_orders_payment_follow.menu_sales_reporting_customers_payments_follow
+msgid "Customers Payments Follow"
+msgstr "متابعة مدفوعات العملاء"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_account_payment__display_name
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__display_name
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_account_payment__id
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__id
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__id
+msgid "ID"
+msgstr "المُعرف"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__near_confirm_threshold
+msgid "Near Confirm Threshold"
+msgstr "قريب من حد التأكيد"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.report_payment_receipt_document_sp
+msgid "Order ID:"
+msgstr "رقم الطلب:"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__amount_paid_percent
+msgid "Paid (%)"
+msgstr "مدفوع (%)"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model,name:sales_orders_payment_follow.model_account_payment
+msgid "Payments"
+msgstr "الدفعات"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__r_balance
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__r_balance
+msgid "R Balance"
+msgstr "الرصيد"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/sale_order.py:0
+msgid "Refund"
+msgstr "استرداد"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_order_form_inherit_buttons_sp
+msgid "Refunds"
+msgstr "المبالغ المستردة"
+
+#. module: sales_orders_payment_follow
+#: model:res.groups.privilege,name:sales_orders_payment_follow.privilege_so_confirm_percent
+msgid "SO Confirm Percent"
+msgstr "نسبة تأكيد أمر البيع"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/sale_order.py:0
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__so_payments
+msgid "SO Payments"
+msgstr "مدفوعات أمر البيع"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/sale_order.py:0
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__so_refunds
+msgid "SO Refunds"
+msgstr "مبالغ مستردة لأمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_sale_order__so_remaining
+msgid "SO Remaining"
+msgstr "المتبقي من أمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_account_payment__sale_order_id
+msgid "Sale Order"
+msgstr "أمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model,name:sales_orders_payment_follow.model_sale_order
+msgid "Sales Order"
+msgstr "أمر البيع"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/cust_sbuttons_actions.py:0
+msgid "Sales Orders / Quotations"
+msgstr "أوامر البيع / عروض الأسعار"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__so_count
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__so_count
+msgid "Sales Orders Count"
+msgstr "عدد أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.module.category,name:sales_orders_payment_follow.module_category_sales_orders_payment_follow
+msgid "Sales Orders Payment Follow"
+msgstr "متابعة مدفوعات أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_amount_so
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_amount_so
+msgid "T Amount So"
+msgstr "إجمالي مبلغ أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_count_so
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_count_so
+msgid "T Count So"
+msgstr "عدد أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_res_partner_payments_follow_list
+msgid "T Customer Payments"
+msgstr "مدفوعات العميل"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_res_partner_payments_follow_list
+msgid "T Customer Refunds"
+msgstr "مبالغ مستردة للعميل"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_res_partner_payments_follow_list
+msgid "T Customer Remaining"
+msgstr "المتبقي للعميل"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_payments_so
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_payments_so
+msgid "T Payment SO"
+msgstr "مدفوعات أمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_refunded
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_refunded
+msgid "T Refunded"
+msgstr "المبلغ المسترد"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_refunds_so
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_refunds_so
+msgid "T Refunds SO"
+msgstr "مبالغ مستردة لأمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_remaining_amount
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_remaining_amount
+msgid "T Remaining Amount"
+msgstr "المبلغ المتبقي"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_remaining_so
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_remaining_so
+msgid "T Remining SO"
+msgstr "المتبقي من أمر البيع"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.account_move_list_view_sp
+msgid "Tax Excluded"
+msgstr "غير شامل الضريبة"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.account_move_list_view_sp
+msgid "Total"
+msgstr "الإجمالي"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__total_free_payments
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__total_free_payments
+msgid "Total Free Payments"
+msgstr "إجمالي المدفوعات الحرة"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__total_free_refunds
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__total_free_refunds
+msgid "Total Free Refunds"
+msgstr "إجمالي المبالغ المستردة الحرة"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__t_paid_amount
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__t_paid_amount
+msgid "Total Paid"
+msgstr "إجمالي المدفوع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__total_so_amount
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__total_so_amount
+msgid "Total SO Amount"
+msgstr "إجمالي مبلغ أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__total_so_payments
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__total_so_payments
+msgid "Total SO Payments"
+msgstr "إجمالي مدفوعات أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__total_so_refunds
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__total_so_refunds
+msgid "Total SO Refunds"
+msgstr "إجمالي المبالغ المستردة لأوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_partner__total_so_remaining
+#: model:ir.model.fields,field_description:sales_orders_payment_follow.field_res_users__total_so_remaining
+msgid "Total SO Remaining"
+msgstr "إجمالي المتبقي من أوامر البيع"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.account_move_list_view_sp
+msgid "Total in Currency"
+msgstr "الإجمالي بالعملة"
+
+#. module: sales_orders_payment_follow
+#: model_terms:ir.ui.view,arch_db:sales_orders_payment_follow.view_order_form_inherit_warning_sp
+msgid "Your paid percentage is"
+msgstr "نسبة الدفع الخاصة بك هي"
+
+#. module: sales_orders_payment_follow
+#. odoo-python
+#: code:addons/sales_orders_payment_follow/models/sale_order.py:0
+msgid "sale_order_id"
+msgstr "معرّف أمر البيع"

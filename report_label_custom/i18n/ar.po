@@ -1,0 +1,105 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* report_label_custom
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-30 14:42+0000\n"
+"PO-Revision-Date: 2026-06-30 14:42+0000\n"
+"Last-Translator: Sameh AbdelAl\n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: report_label_custom
+#: model:ir.actions.report,print_report_name:report_label_custom.action_report_product_label_custom
+msgid "'Label - %s' % object.name"
+msgstr "'ملصق - %s' % object.name"
+
+#. module: report_label_custom
+#: model:ir.actions.report,print_report_name:report_label_custom.action_report_stock_label_custom
+msgid "'Products Labels - %s' % (object.name)"
+msgstr "'ملصقات المنتجات - %s' % (object.name)"
+
+#. module: report_label_custom
+#: model:ir.model,name:report_label_custom.model_product_label_layout
+msgid "Choose the sheet layout to print the labels"
+msgstr "اختر مخطط الورقة لطباعة البطاقات"
+
+#. module: report_label_custom
+#: model:ir.model.fields.selection,name:report_label_custom.selection__product_label_layout__print_format__custom
+msgid "Custom Label (38x25mm)"
+msgstr "بطاقة مخصصة (38×25 مم)"
+
+#. module: report_label_custom
+#: model:ir.model.fields,field_description:report_label_custom.field_product_label_layout__display_name
+#: model:ir.model.fields,field_description:report_label_custom.field_product_template__display_name
+#: model:ir.model.fields,field_description:report_label_custom.field_stock_picking__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: report_label_custom
+#: model:ir.model.fields,field_description:report_label_custom.field_product_label_layout__print_format
+msgid "Format"
+msgstr "التنسيق"
+
+#. module: report_label_custom
+#: model:ir.model.fields,field_description:report_label_custom.field_product_label_layout__id
+#: model:ir.model.fields,field_description:report_label_custom.field_product_template__id
+#: model:ir.model.fields,field_description:report_label_custom.field_stock_picking__id
+msgid "ID"
+msgstr "المُعرف"
+
+#. module: report_label_custom
+#: model_terms:ir.ui.view,arch_db:report_label_custom.template_report_product_label_custom
+msgid "No Barcode"
+msgstr "لا يوجد باركود"
+
+#. module: report_label_custom
+#. odoo-python
+#: code:addons/report_label_custom/models/product_label_layout.py:0
+msgid "No active variants found."
+msgstr "لا توجد متغيرات نشطة."
+
+#. module: report_label_custom
+#. odoo-python
+#: code:addons/report_label_custom/models/product_label_layout.py:0
+msgid "No product selected."
+msgstr "لم يتم تحديد منتج."
+
+#. module: report_label_custom
+#: model:ir.model,name:report_label_custom.model_product_template
+msgid "Product"
+msgstr "المنتج"
+
+#. module: report_label_custom
+#: model:ir.actions.report,name:report_label_custom.action_report_stock_label_custom
+msgid "Product Label (PDF) custom"
+msgstr "ملصق المنتج (PDF) مخصص"
+
+#. module: report_label_custom
+#: model:ir.actions.report,name:report_label_custom.action_report_product_label_custom
+msgid "Product Label Custom 38x25"
+msgstr "ملصق منتج مخصص 38×25"
+
+#. module: report_label_custom
+#: model:ir.model,name:report_label_custom.model_stock_picking
+msgid "Transfer"
+msgstr "تحويل"
+
+#. module: report_label_custom
+#. odoo-python
+#: code:addons/report_label_custom/models/product_label_layout.py:0
+msgid "Unable to find report template for %s format"
+msgstr "تعذر العثور على قالب تقرير للتنسيق %s"
+
+#. module: report_label_custom
+#. odoo-python
+#: code:addons/report_label_custom/models/product_label_layout.py:0
+msgid "You need to set a positive quantity."
+msgstr "يجب تعيين كمية موجبة."
