@@ -1,0 +1,45 @@
+<odoo>
+    <record id="action_customers_payments_follow" model="ir.actions.act_window">
+        <field name="name">Customers Payments Follow</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list</field>
+        <!--<field name="view_id" ref="view_res_partner_payments_follow_list"/>-->
+
+        <field name="domain">[]</field>
+        <field name="context">{'search_default_customer': 1}</field>
+    </record>
+
+    <menuitem id="menu_sales_reporting_customers_payments_follow"
+              name="Customers Payments Follow"
+              parent="sale.menu_sale_report"
+              action="action_customers_payments_follow"/>
+
+    <!-- provide a tree view for the report to show the computed columns -->
+    <record id="view_res_partner_payments_follow_list" model="ir.ui.view">
+        <field name="name">res.partner.payments.follow.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="t_count_so"/>
+                <field name="t_amount_so"/>
+                <field name="t_payments_so"/>
+                <field name="t_refunds_so"/>
+                <field name="t_remaining_so"/>
+                <field name="t_paid_amount" string="T Customer Payments"/>
+                <field name="t_refunded" string="T Customer Refunds"/>
+                <field name="t_remaining_amount" string="T Customer Remaining"/>
+
+                <!--<field name="so_count"/>
+                <field name="total_so_amount"/>
+                <field name="total_so_payments"/>
+                <field name="total_so_refunds"/>
+                <field name="total_so_remaining"/>
+                <field name="total_free_payments"/>
+                <field name="total_free_refunds"/>-->
+            </list>
+        </field>
+    </record>
+
+    <!-- optional form view for partners (reuse existing) -->
+</odoo>

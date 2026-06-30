@@ -34,18 +34,14 @@
                     width: 38mm;
                     height: 25mm;
                     overflow: hidden;
-                    font-family: Arial, sans-serif;
+                    font-family: "Noto Sans Arabic", Arial, sans-serif !important;
                 }
                 .label-page {
                     width: 38mm;
                     height: 25mm;
                     overflow: hidden;
                     text-align: center;
-                    /*
-                        الـ label = barcode(8mm) + humanreadable(~2mm) + num(2mm) + name(2.5mm) = ~14.5mm
-                        top margin = (25 - 14.5) / 2 = 5.25mm
-                        نستخدم padding-top بالـ mm — ثابت على أي DPI
-                    */
+                    /* label = barcode(8mm) + humanreadable(2mm) + num(2mm) + name(2.5mm) = 14.5mm */
                     padding-top: 8mm;
                     padding-left: 7mm;
 
@@ -68,6 +64,9 @@
                     white-space: nowrap;
                     text-overflow: ellipsis;
                     text-align: center;
+                    direction: rtl;
+                    unicode-bidi: embed;
+                    font-family: "Noto Sans Arabic", "DejaVu Sans", sans-serif;
                 }
             </style>
 
@@ -93,6 +92,7 @@
 
                     <div class="label-num"><t t-out="p['barcode']"/></div>
                     <div class="label-name"><t t-out="p['name']"/></div>
+                    <div style="font-size:5px;color:red;">اختبار</div>
 
                 </div>
             </t>

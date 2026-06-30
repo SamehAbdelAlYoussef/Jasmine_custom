@@ -7,6 +7,57 @@ from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Arabic → Latin transliteration table
+# Used to convert Arabic vendor names into ASCII barcode-safe initials.
+# Multi-character mappings (like SH for ش) are handled in _arabic_to_latin().
+# ---------------------------------------------------------------------------
+_ARABIC_TO_LATIN = {
+    # Single-letter mappings
+    'ا': 'A', 'أ': 'A', 'إ': 'A', 'آ': 'A',
+    'ب': 'B',
+    'ت': 'T', 'ث': 'T',
+    'ج': 'J',
+    'ح': 'H', 'خ': 'K',
+    'د': 'D', 'ذ': 'D',
+    'ر': 'R',
+    'ز': 'Z',
+    'س': 'S', 'ش': 'S',
+    'ص': 'S', 'ض': 'D',
+    'ط': 'T', 'ظ': 'Z',
+    'ع': 'A', 'غ': 'G',
+    'ف': 'F', 'ق': 'Q',
+    'ك': 'K',
+    'ل': 'L',
+    'م': 'M',
+    'ن': 'N',
+    'ه': 'H', 'ة': 'H',
+    'و': 'W', 'ؤ': 'W',
+    'ي': 'Y', 'ى': 'A', 'ئ': 'Y',
+    'ء': 'A',
+    # Digits (keep as-is)
+    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
+}
+
+
+def _arabic_to_latin(text):
+    """Convert Arabic characters to Latin, preserving Latin chars as-is.
+
+    Returns a string of only ASCII letters (A-Z) — exactly 2 chars
+    per input character for mapped Arabic letters, 1:1 for Latin.
+    The result is safe for Code128 barcodes.
+    """
+    result = []
+    for ch in text:
+        if 'A' <= ch <= 'Z' or 'a' <= ch <= 'z':
+            result.append(ch.upper())
+        else:
+            mapped = _ARABIC_TO_LATIN.get(ch)
+            if mapped:
+                result.append(mapped)
+    return ''.join(result)
+
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
@@ -53,35 +104,125 @@ class ProductProduct(models.Model):
 
     def write(self, vals):
         res = super(ProductProduct, self).write(vals)
-        # Regenerate barcode when categ_id or seller_ids changes
-        # (these can come via product.template write or be set directly)
-        prefix_fields = {'categ_id', 'seller_ids'}
-        if prefix_fields & set(vals.keys()):
+        # When category or vendor (seller_ids) changes, rebuild ONLY the prefix.
+        # The sequence number stays fixed — never changes after initial generation.
+        if {'categ_id', 'seller_ids'} & set(vals.keys()):
             for product in self:
-                barcode = product._build_barcode(product)
-                if barcode:
-                    super(ProductProduct, product).write({'barcode': barcode})
+                if product.barcode:
+                    new_barcode = product._rebuild_barcode_prefix(product)
+                    if new_barcode:
+                        super(ProductProduct, product).write({'barcode': new_barcode})
         return res
 
     def action_generate_barcode(self):
         """Generate barcode for selected products (only if empty)"""
+        generated_count = 0
         for product in self:
             if product.barcode:
                 continue
             barcode = self._build_barcode(product)
             if barcode:
                 product.write({'barcode': barcode})
+                generated_count += 1
+
+        if generated_count:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('✅ باركود تم إنشاؤه'),
+                    'message': _(
+                        'تم إنشاء %(count)s باركود بنجاح مع أول حرفين من اسم المورد (عربي → إنجليزي).'
+                    ) % {'count': generated_count},
+                    'type': 'success',
+                    'sticky': False,
+                },
+            }
         return True
 
     def action_regenerate_barcode(self):
-        """Force regenerate barcode"""
-        self.write({'barcode': False})
-        return self.action_generate_barcode()
+        """Regenerate barcode — rebuilds prefix (vendor/category) but keeps the SAME sequence number."""
+        updated_count = 0
+        for product in self:
+            if not product.barcode:
+                barcode = self._build_barcode(product)
+            else:
+                barcode = self._rebuild_barcode_prefix(product)
+            if barcode and barcode != product.barcode:
+                product.write({'barcode': barcode})
+                updated_count += 1
+        if updated_count:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('✅ تم تحديث الباركود'),
+                    'message': _('تم تحديث %(count)s باركود — البادئة فقط، رقم التسلسل ثابت.') % {'count': updated_count},
+                    'type': 'success',
+                    'sticky': False,
+                },
+            }
+        return True
+
+    def _extract_seq_from_barcode(self, barcode_value):
+        """Extract the sequence number from a barcode.
+        Format: [2-digit category][2-char vendor][sequence]
+        E.g.: '22AD15' → 15, '78SH123' → 123
+        """
+        if len(barcode_value) > 4:
+            seq = barcode_value[4:]
+            return int(seq) if seq.isdigit() else None
+        return None
+
+    def _rebuild_barcode_prefix(self, product):
+        """Rebuild only the category+vendor prefix; keep the existing sequence number.
+        E.g.: 22AD15 → vendor changed → 22MY15 (same sequence, new vendor initials)
+        """
+        if not product.barcode:
+            return self._build_barcode(product)
+
+        # Rebuild the prefix from current category + vendor
+        cat_num = '00'
+        if product.categ_id and product.categ_id.category_number:
+            cat_num = product.categ_id.category_number
+
+        # Vendor initials
+        seller = None
+        if product.product_tmpl_id and product.product_tmpl_id.seller_ids:
+            seller = product.product_tmpl_id.seller_ids[0].partner_id
+        elif product.seller_ids:
+            seller = product.seller_ids[0].partner_id
+
+        vendor_initials = 'XX'
+        if seller and seller.name:
+            name_clean = re.sub(r'[^a-zA-Z؀-ۿ]', '', seller.name).strip()
+            if name_clean:
+                raw_initials = name_clean[:2]
+                vendor_initials = _arabic_to_latin(raw_initials)
+                if len(vendor_initials) > 2:
+                    vendor_initials = vendor_initials[:2]
+                elif len(vendor_initials) < 2:
+                    vendor_initials = vendor_initials.ljust(2, 'X')
+
+        # Extract existing sequence number — never changes
+        seq_num = self._extract_seq_from_barcode(product.barcode)
+        if seq_num is None:
+            # Fallback: if barcode has no digits, generate new sequence
+            return self._build_barcode(product)
+
+        prefix = '%s%s' % (cat_num, vendor_initials)
+        return '%s%s' % (prefix, seq_num)
 
     def _build_barcode(self, product):
         """
         Build barcode: [CategoryNumber][VendorInitials][GLOBAL_Sequence]
-        Example: 78MY1, 23AD2, 78MY3 (global sequence NEVER resets)
+
+        Barcode format:  22XX7, 78SH123
+        - XX  = default when no vendor
+        - SH  = Arabic ش → S + ر → H  mapped to Latin (Code128-safe)
+        - SA  = Latin vendor "Sameh" → first 2 chars "SA"
+
+        Global sequence NEVER resets — unique across all products.
         """
         cat_num = '00'
         if product.categ_id and product.categ_id.category_number:
@@ -95,11 +236,23 @@ class ProductProduct(models.Model):
             seller = product.seller_ids[0].partner_id
 
         vendor_initials = 'XX'
+        vendor_display_name = ''
         if seller and seller.name:
-            name_clean = re.sub(r'[^a-zA-Z؀-ۿ\s]', '', seller.name)
+            # 1) Keep only Arabic + Latin letters (strip digits, special chars)
+            name_clean = re.sub(r'[^a-zA-Z؀-ۿ]', '', seller.name)
             name_clean = name_clean.strip()
             if name_clean:
-                vendor_initials = name_clean[:2].upper()
+                # 2) Take the first 2 characters (may be Arabic or Latin)
+                raw_initials = name_clean[:2]
+                # 3) Transliterate Arabic → Latin (Latin chars stay as-is, uppercased)
+                vendor_initials = _arabic_to_latin(raw_initials)
+                if vendor_initials:
+                    vendor_display_name = seller.name
+                # 4) Ensure exactly 2 ASCII chars for the barcode
+                if len(vendor_initials) > 2:
+                    vendor_initials = vendor_initials[:2]
+                elif len(vendor_initials) < 2:
+                    vendor_initials = vendor_initials.ljust(2, 'X')
 
         prefix = '%s%s' % (cat_num, vendor_initials)
 
@@ -129,7 +282,16 @@ class ProductProduct(models.Model):
             })
 
         seq_num = sequence.next_by_id()
-        return '%s%s' % (prefix, seq_num)
+        barcode_value = '%s%s' % (prefix, seq_num)
+
+        # Log when an Arabic vendor name was transliterated
+        if vendor_display_name:
+            _logger.info(
+                "Barcode %s: vendor '%s' → initials '%s' (Arabic→Latin)",
+                barcode_value, vendor_display_name, vendor_initials,
+            )
+
+        return barcode_value
 
 
 class ProductTemplate(models.Model):
@@ -186,12 +348,15 @@ class ProductTemplate(models.Model):
             'tag': 'reload',
         }
 
-    def _trigger_barcode_regeneration(self):
-        """Regenerate barcodes for all variants (called when vendor/category changes)."""
+    def _trigger_barcode_prefix_rebuild(self):
+        """Rebuild barcode PREFIX for all variants (vendor/category changed).
+        Sequence number stays fixed — only prefix is rebuilt.
+        """
         for variant in self.product_variant_ids:
-            barcode = variant._build_barcode(variant)
-            if barcode:
-                variant.write({'barcode': barcode})
+            if variant.barcode:
+                barcode = variant._rebuild_barcode_prefix(variant)
+                if barcode:
+                    variant.write({'barcode': barcode})
 
     @api.model
     def create(self, vals):
@@ -208,17 +373,19 @@ class ProductTemplate(models.Model):
         return template
 
     def write(self, vals):
-        # Detect if category changed — triggers barcode regeneration
-        # Note: seller_ids is One2many (virtual), handled via
-        # product.supplierinfo overrides below
+        # When category changes, rebuild PREFIX only — sequence stays fixed.
         prefix_changed = 'categ_id' in vals
         res = super(ProductTemplate, self).write(vals)
         for template in self:
             for variant in template.product_variant_ids:
-                if prefix_changed or not variant.barcode:
-                    # Regenerate barcode when category changes
-                    # or variant has no barcode yet
+                if not variant.barcode:
+                    # No barcode yet → generate fresh one
                     barcode = variant._build_barcode(variant)
+                    if barcode:
+                        variant.write({'barcode': barcode})
+                elif prefix_changed:
+                    # Category changed → rebuild prefix, keep sequence
+                    barcode = variant._rebuild_barcode_prefix(variant)
                     if barcode:
                         variant.write({'barcode': barcode})
         return res
@@ -243,26 +410,28 @@ class ProductTemplate(models.Model):
 
 
 class ProductSupplierinfo(models.Model):
-    """Hook into vendor list changes to regenerate barcodes."""
+    """Hook into vendor list changes to rebuild barcode PREFIX only.
+    The sequence number always stays fixed.
+    """
     _inherit = 'product.supplierinfo'
 
     @api.model
     def create(self, vals):
         record = super(ProductSupplierinfo, self).create(vals)
         if record.product_tmpl_id:
-            record.product_tmpl_id._trigger_barcode_regeneration()
+            record.product_tmpl_id._trigger_barcode_prefix_rebuild()
         return record
 
     def write(self, vals):
         res = super(ProductSupplierinfo, self).write(vals)
         for record in self:
             if record.product_tmpl_id:
-                record.product_tmpl_id._trigger_barcode_regeneration()
+                record.product_tmpl_id._trigger_barcode_prefix_rebuild()
         return res
 
     def unlink(self):
         templates = self.mapped('product_tmpl_id')
         res = super(ProductSupplierinfo, self).unlink()
         for template in templates:
-            template._trigger_barcode_regeneration()
+            template._trigger_barcode_prefix_rebuild()
         return res

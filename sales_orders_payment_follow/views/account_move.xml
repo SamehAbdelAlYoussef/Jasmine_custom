@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<record id="account_move_list_view_sp" model="ir.ui.view">
+        <field name="name">account.move.list.sp</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+        	<list create="false">
+	            <field name="name"/>
+	            <field name="invoice_date"/>
+	            <field name="invoice_date_due"/>
+	            <field name="ref"/>
+	            <field name="amount_untaxed_signed" string="Tax Excluded" sum="Total"/>
+	            <field name="amount_total_signed" string="Total" sum="Total" decoration-bf="1"/>
+	            <field name="amount_total_in_currency_signed" string="Total in Currency"/>
+	            <field name="payment_state"
+	            	widget="badge"
+	            	decoration-danger="payment_state == 'not_paid'"
+	            	decoration-warning="payment_state in ('partial', 'in_payment')"
+	            	decoration-success="payment_state in ('paid', 'reversed')"/>
+	            <field name="state"
+	            	widget="badge"
+	            	decoration-success="state == 'posted'"
+	            	decoration-info="state == 'draft'"/>
+	        </list>
+        </field>
+    </record>
+</odoo>

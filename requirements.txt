@@ -1,0 +1,6 @@
+# Jasmine Custom — Odoo Addons Dependencies
+# Arabic → Latin transliteration for product barcodes
+unidecode>=1.1.0
+
+# Barcode generation (1D barcodes: Code128, EAN-13, etc.)
+python-barcode>=0.15.0

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit the Sales Orders tree view -->
+    <record id="view_order_tree_inherit_sp" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.sp</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="date_order" position="after">
+                <field name="amount_paid_percent" widget="progressbar"/>
+                <field name="so_payments" />
+                <field name="so_refunds"/>
+                <field name="so_remaining"/>
+                <!--<field name="confirm_on_percent" groups="sales_orders_payment_follow.group_modify_confirm_percent"/>-->
+                 <!-- Readonly version (for users with readonly group) -->
+                <field name="confirm_on_percent"
+                       optional="hide"
+                       readonly="1"
+                       groups="sales_orders_payment_follow.group_readonly_confirm_percent"/>
+
+                <!-- Editable version (for users with modify group) -->
+                 <field name="confirm_on_percent"
+                       optional="hide"
+                       groups="sales_orders_payment_follow.group_modify_confirm_percent"/>
+            </field>
+        </field>
+    </record>
+</odoo>

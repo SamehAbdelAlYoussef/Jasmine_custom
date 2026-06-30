@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+	<record id="view_partner_form_sp" model="ir.ui.view">
+		<field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="name">res.partner.form.sp</field>
+        <field name="model">res.partner</field>
+        <field name="priority" eval="1"/>
+        <field name="arch" type="xml">
+        	<xpath expr="//form/sheet/div" position="before">
+        		<div class="oe_button_box" name="button_box">
+<!--                    <button type="object"-->
+<!--                        class="oe_stat_button"-->
+<!--                        icon="fa-pencil-square-o"-->
+<!--                        name="open_partner_ledger"-->
+<!--                        string="Partner Statement">-->
+<!--                    </button>-->
+                    <button class="oe_stat_button" type="object" name="action_open_sale_orders" icon="fa-usd">
+                        <div class="o_form_field o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="t_amount_so" readonly="1"/>
+                            </span>
+                            <span class="o_stat_text" >Total SO</span>
+                        </div>
+                    </button>
+                    <button class="oe_stat_button" type="object" name="action_open_customer_payments" icon="fa-usd">
+                        <div class="o_form_field o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="t_paid_amount" readonly="1"/>
+                            </span>
+                            <span class="o_stat_text" >Customer Payments</span>
+                        </div>
+                    </button>
+                    <button class="oe_stat_button" type="object" name="action_open_customer_refunds" icon="fa-undo">
+                        <div class="o_form_field o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="t_refunded" readonly="1"/>
+                            </span>
+                            <span class="o_stat_text">Customer Refunds</span>
+
+                        </div>
+                    </button>
+                    <button class="oe_stat_button" type="object" name="action_open_paid_invoice" icon="fa-usd">
+                        <div class="o_form_field o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="t_remaining_amount" readonly="1"/>
+                            </span>
+                            <span class="o_stat_text" >Customer Remaining</span>
+
+                        </div>
+                    </button>
+<!--                    <button class="oe_stat_button" type="object" name="action_open_paid_invoice" icon="fa-usd">-->
+<!--                        <div class="o_form_field o_stat_info">-->
+<!--                            <span class="o_stat_value">-->
+<!--                                <field name="r_balance" readonly="1"/>-->
+<!--                            </span>-->
+<!--                            <span class="o_stat_text" >Balance</span>-->
+<!--                        </div>-->
+<!--                    </button>-->
+                </div>
+        	</xpath>
+        </field>
+    </record>
+</odoo>

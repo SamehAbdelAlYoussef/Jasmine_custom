@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Existing list view modification -->
+    <record id="view_order_list_view_sp" model="ir.ui.view">
+        <field name="name">sale.order.list</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="create_date" position="after">
+                <!--<field name="amount_paid_percent" widget="percentage"/>-->
+                <field name="amount_paid_percent" widget="progressbar"/>
+                <field name="so_payments"/>
+                <field name="so_refunds"/>
+                <field name="so_remaining"/>
+                <!--<field name="confirm_on_percent" groups="sales_orders_payment_follow.group_modify_confirm_percent"/>-->
+                <!-- unified version for confirm_on_percent -->
+                 <!-- Readonly version (for users with readonly group) -->
+                <field name="confirm_on_percent"
+                       optional="hide"
+                       readonly="1"
+                       groups="sales_orders_payment_follow.group_readonly_confirm_percent"/>
+
+                <!-- Editable version (for users with modify group) -->
+                 <field name="confirm_on_percent"
+                       optional="hide"
+                       groups="sales_orders_payment_follow.group_modify_confirm_percent"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- 🧩 New form view modification -->
+    <record id="view_order_form_inherit_confirm_percent_sp" model="ir.ui.view">
+        <field name="name">sale.order.form.confirm.percent.sp</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Add field below Payment Terms -->
+            <field name="payment_term_id" position="after">
+                <!--<field name="confirm_on_percent" groups="sales_orders_payment_follow.group_modify_confirm_percent"/>-->
+                 <!-- Readonly version (for users with readonly group) -->
+                <field name="confirm_on_percent"
+                       optional="hide"
+                       readonly="1"
+                       groups="sales_orders_payment_follow.group_readonly_confirm_percent"/>
+
+                <!-- Editable version (for users with modify group) -->
+                 <field name="confirm_on_percent"
+                       optional="hide"
+                       groups="sales_orders_payment_follow.group_modify_confirm_percent"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Show warning banner on form when near threshold -->
+    <record id="view_order_form_inherit_warning_sp" model="ir.ui.view">
+        <field name="name">sale.order.form.warning.sp</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert a banner at top of form -->
+            <xpath expr="//sheet" position="inside">
+                <div class="alert alert-info o_alert" role="alert" t-attf-class="{'o_invisible': not near_confirm_threshold}">
+                    <strong>Payment Notice:</strong>
+                    <span>Your paid percentage is <field name="amount_paid_percent"/>%. Minimum required to confirm: <field name="confirm_on_percent"/>%.</span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+     <!-- Add smart buttons on sale order form -->
+    <record id="view_order_form_inherit_buttons_sp" model="ir.ui.view">
+        <field name="name">sale.order.form.buttons.sp</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/sheet/div" position="inside">
+            <!--<xpath expr="//header" position="before">-->
+                <!-- Buttons show counts or amounts (use string with values) -->
+                <button name="action_open_so_payments" type="object" class="btn btn-sm btn-outline-secondary" icon="fa-money">
+                    <field name="so_payments" widget="monetary" options="{'no_open': True}"/>
+                </button>
+                <button name="action_open_so_refunds" type="object" class="btn btn-sm btn-outline-secondary" icon="fa-undo">
+                    <field name="so_refunds" widget="monetary" options="{'no_open': True}"/>
+                </button>
+                <button name="action_open_so_remaining" type="object" class="btn btn-sm btn-outline-secondary" icon="fa-balance-scale">
+                    <field name="so_remaining" widget="monetary" options="{'no_open': True}"/>
+                </button>
+
+
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <!-- action buttons to create payment/refund -->
+                <button name="action_open_create_payment" type="object" class="btn btn-sm btn-primary">Advance Payment</button>
+                <button name="action_open_create_refund" type="object" class="btn btn-sm btn-warning">Refunds</button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- &lt;!&ndash; Make payment_type and sale_order_id readonly when context contains default_sale_order_id &ndash;&gt;
+    <record id="view_account_payment_form_inherit_sp" model="ir.ui.view">
+        <field name="name">account.payment.form.readonly_from_so.sp</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+
+           &lt;!&ndash; &lt;!&ndash; Modern Odoo 18 syntax: replace attrs with modifiers &ndash;&gt;
+            <xpath expr="//field[@name='payment_type']" position="attributes">
+                <attribute name="modifiers">{'readonly': [['context_default_sale_order_id', '!=', False]]}</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='sale_order_id']" position="attributes">
+                <attribute name="modifiers">{'readonly': [['context_default_sale_order_id', '!=', False]]}</attribute>
+            </xpath>&ndash;&gt;
+
+        </field>
+    </record>-->
+</odoo>

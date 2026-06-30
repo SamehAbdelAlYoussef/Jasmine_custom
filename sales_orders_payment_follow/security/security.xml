@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="module_category_sales_orders_payment_follow" model="ir.module.category">
+        <field name="name">Sales Orders Payment Follow</field>
+        <field name="description">Access rights for Sales Orders Payment Follow</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- Privilege for SO Confirm Percent groups (Odoo 19: replaces category_id on res.groups) -->
+    <record id="privilege_so_confirm_percent" model="res.groups.privilege">
+        <field name="name">SO Confirm Percent</field>
+        <field name="category_id" ref="sales_orders_payment_follow.module_category_sales_orders_payment_follow"/>
+    </record>
+
+    <!-- Group: Read-only -->
+    <record id="group_readonly_confirm_percent" model="res.groups">
+        <field name="name">Allow to read only SO confirm percent</field>
+        <field name="privilege_id" ref="sales_orders_payment_follow.privilege_so_confirm_percent"/>
+    </record>
+
+    <!-- Group: Modify -->
+    <record id="group_modify_confirm_percent" model="res.groups">
+            <field name="name">Allow to modify SO confirm percent</field>
+        <field name="privilege_id" ref="sales_orders_payment_follow.privilege_so_confirm_percent"/>
+    </record>
+
+</odoo>
