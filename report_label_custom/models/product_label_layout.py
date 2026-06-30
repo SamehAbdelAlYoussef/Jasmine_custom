@@ -11,8 +11,10 @@ class ProductLabelLayout(models.TransientModel):
     _inherit = 'product.label.layout'
 
     print_format = fields.Selection(
-        selection_add=[('custom', 'Custom Label (38x25mm)')],
-        ondelete={'custom': 'set default'}
+        [('custom', 'Custom Label (38x25mm)')],
+        string="Format",
+        default='custom',
+        required=True,
     )
 
     def _generate_barcode_base64(self, barcode_value):
