@@ -89,11 +89,8 @@
                             No Barcode
                         </div>
                     </t>
-
                     <div class="label-num"><t t-out="p['barcode']"/></div>
                     <div class="label-name"><t t-out="p['name']"/></div>
-                    <div style="font-size:5px;color:red;">اختبار</div>
-
                 </div>
             </t>
         </t>
