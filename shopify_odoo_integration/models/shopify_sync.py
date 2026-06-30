@@ -1054,7 +1054,6 @@ class ShopifySync(models.Model):
 
         Payment = self.env['account.payment']
         created_count = 0
-        pending_count = 0
 
         for txn in transactions:
             kind = txn.get('kind', '')
@@ -1124,41 +1123,8 @@ class ShopifySync(models.Model):
                         "txn %s — %s", txn_id, exc,
                     )
 
-            elif status == 'pending':
-                # Pending payment (e.g. COD) → create draft + post note
-                try:
-                    vals = self._prepare_payment_vals(
-                        txn, sale_order, sale_order.partner_id, payment_type,
-                    )
-                    payment = Payment.create(vals)
-                    # Leave as draft — not posted yet
-                    pending_count += 1
-
-                    # Post note on sale order with pending details
-                    note = (
-                        f"⏳ Payment Pending — {gateway}\n"
-                        f"Amount: {amount}\n"
-                        f"Status: {status}\n"
-                        f"Shopify Txn: {txn_id}"
-                    )
-                    if message:
-                        note += f"\nMessage: {message}"
-                    sale_order.message_post(body=note)
-
-                    _logger.info(
-                        "Shopify payment sync: draft payment %s for SO %s "
-                        "(txn=%s, amount=%s, pending COD)",
-                        payment.name, sale_order.name, txn_id, amount,
-                    )
-                except Exception as exc:
-                    _logger.warning(
-                        "Shopify payment sync: failed to create pending payment "
-                        "for txn %s — %s", txn_id, exc,
-                    )
-
-        if created_count > 0 or pending_count > 0:
-            if created_count > 0:
-                sale_order.x_shopify_payment_synced = True
+        if created_count > 0:
+            sale_order.x_shopify_payment_synced = True
             # Invalidate computed fields so so_payments / amount_paid_percent
             # refresh immediately in the UI after sync.
             sale_order.invalidate_recordset([
@@ -1166,11 +1132,11 @@ class ShopifySync(models.Model):
                 'amount_paid_percent', 'near_confirm_threshold',
             ])
             _logger.info(
-                "Shopify payment sync: %d posted + %d pending for SO %s",
-                created_count, pending_count, sale_order.name,
+                "Shopify payment sync: %d payments created for SO %s",
+                created_count, sale_order.name,
             )
 
-        return created_count > 0 or pending_count > 0
+        return created_count > 0
 
     def _prepare_payment_vals(self, transaction, sale_order, partner, payment_type):
         """Build ``account.payment`` vals from a Shopify transaction.
