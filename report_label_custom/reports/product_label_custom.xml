@@ -33,17 +33,19 @@
                 html, body {
                     width: 38mm;
                     height: 25mm;
-                    overflow: hidden;
-                    font-family: "Noto Sans Arabic", Arial, sans-serif !important;
+                    <!--overflow: hidden;-->
+                font-family: 'Noto Sans Arabic', 'Noto Naskh Arabic', 'DejaVu Sans', Arial, sans-serif;
+
                 }
                 .label-page {
                     width: 38mm;
                     height: 25mm;
-                    overflow: hidden;
+                    <!--overflow: hidden;-->
                     text-align: center;
-                    /* label = barcode(8mm) + humanreadable(2mm) + num(2mm) + name(2.5mm) = 14.5mm */
-                    padding-top: 8mm;
-                    padding-left: 7mm;
+                                 font-family: 'Noto Sans Arabic', 'Noto Naskh Arabic', 'DejaVu Sans', Arial, sans-serif;
+
+                    padding-top: 15mm;
+                    padding-left: 20mm;
 
                 }
                 .label-page img {
@@ -51,23 +53,25 @@
                     margin: 0 auto;
                 }
                 .label-num {
-                    font-size: 6px;
-                    margin-top: 0.3mm;
-                    letter-spacing: 0.5px;
-                    text-align: center;
+                  font-size: 15px;
+               font-size: 15px;
+                margin-top: 0.3mm;
+                letter-spacing: 0.5px;
+                text-align: center;
+                padding-left: 0mm;
+                width: 271px !important;
+                max-width: 245% !important;
+
                 }
-                .label-name {
-                    font-size: 7px;
-                    font-weight: bold;
-                    margin-top: 0.8mm;
-                    overflow: hidden;
-                    white-space: nowrap;
-                    text-overflow: ellipsis;
-                    text-align: center;
-                    direction: rtl;
-                    unicode-bidi: embed;
-                    font-family: "Noto Sans Arabic", "DejaVu Sans", sans-serif;
-                }
+             .label-name {
+                font-size: 7px;
+                font-weight: bold;
+                margin-top: 3px !important;
+                width: 271px !important;
+                max-width: 245% !important;
+             font-family: 'Noto Sans Arabic', 'DejaVu Sans', 'Arial', sans-serif;
+
+            }
             </style>
 
             <t t-foreach="products_data" t-as="p">
@@ -75,23 +79,19 @@
                 <div class="label-page" t-att-style="'' if is_last else 'page-break-after:always;'">
 
                     <t t-if="p['barcode']">
-                        <div t-out="p['barcode']"
-                             t-options="{
-                                 'widget': 'barcode',
-                                 'symbology': 'Code128',
-                                 'quiet': 0,
-                                 'img_style': 'width:36mm; height:8mm; display:block; margin:0 auto;',
-                                 'img_class': ''
-                             }"/>
+                        <div t-out="p['barcode']" t-options="{                                  'widget': 'barcode',                                  'symbology': 'Code128',                                  'quiet': 0,                                  'img_style': 'width:45mm; height:12mm; display:block; margin:0 auto;',                                  'img_class': ''                              }"/>
                     </t>
                     <t t-else="">
                         <div style="width:36mm; height:8mm; background:#ffcccc; font-size:5px; line-height:8mm; text-align:center; margin:0 auto;">
                             No Barcode
                         </div>
                     </t>
-                    <div class="label-num"><t t-out="p['barcode']"/></div>
-                    <div class="label-name"><t t-out="p['name']"/></div>
+
+                    <!--<div class="label-num"><t t-out="p['barcode']"/></div>-->
+                    <p class="label-name"><t t-out="p['name']"/></p>
+
                 </div>
+
             </t>
         </t>
     </template>
