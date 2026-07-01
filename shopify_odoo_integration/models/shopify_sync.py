@@ -572,20 +572,43 @@ class ShopifySync(models.Model):
     # -----------------------------------------------------------------
     # Single-order processing
     # -----------------------------------------------------------------
+    def _ensure_shopify_unique_constraint(self):
+        """Ensure the UNIQUE constraint on ``sale.order.x_shopify_id``
+        and ``shopify.deleted.order.shopify_order_id`` exist in PostgreSQL.
+
+        Called at the beginning of every ``_process_single_order`` call
+        (very cheap after the first call — checks ``pg_constraint``).
+        """
+        self.env.cr.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'unique_shopify_id'
+                      AND contype = 'u'
+                ) THEN
+                    ALTER TABLE sale_order
+                    ADD CONSTRAINT unique_shopify_id UNIQUE (x_shopify_id);
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'unique_deleted_shopify_id'
+                      AND contype = 'u'
+                ) THEN
+                    ALTER TABLE shopify_deleted_order
+                    ADD CONSTRAINT unique_deleted_shopify_id
+                    UNIQUE (shopify_order_id);
+                END IF;
+            END $$;
+        """)
+
     def _process_single_order(self, order_data):
         """Create or skip **one** sale.order from a Shopify order dict.
 
         Idempotency: checks ``x_shopify_id`` before creating anything.
-        Caller is expected to set mail-suppression context via
-        ``self.with_context(mail_create_nosubscribe=True, ...)``.
-
-        Race-condition protection
-        -------------------------
-        Uses a PostgreSQL **advisory lock** keyed on the Shopify order ID
-        to serialise concurrent webhooks / cron jobs for the same order.
-        ``pg_advisory_xact_lock`` blocks until the lock is acquired and
-        is automatically released at the end of the transaction, so the
-        second caller will always see the first caller's committed row.
+        Uses a database-level UNIQUE constraint + savepoint as the primary
+        deduplication mechanism — this is the only approach that is
+        guaranteed to work across all workers / processes.
 
         :param order_data: dict — a single Shopify REST order
         :returns: dict ``{'status': 'created'|'skipped', 'sale_order_id': int}``
@@ -593,6 +616,9 @@ class ShopifySync(models.Model):
         SaleOrder = self.env['sale.order']
         shopify_id = str(order_data['id'])
         order_number = str(order_data.get('order_number', shopify_id))
+
+        # ── Ensure the UNIQUE constraint exists ───────────────────────
+        self._ensure_shopify_unique_constraint()
 
         # ── Never re-create a deleted order ──────────────────────────
         if self.env['shopify.deleted.order'].sudo().search_count(
@@ -605,18 +631,7 @@ class ShopifySync(models.Model):
             return {'status': 'skipped', 'sale_order_id': False,
                     'reason': 'previously_deleted'}
 
-        # ── Advisory lock — prevent concurrent creates for same order ──
-        # Use the Shopify REST ID directly as a bigint lock key (deterministic
-        # across workers – Python ``hash()`` is randomised per process).
-        try:
-            lock_key = int(order_data['id']) & 0x7FFFFFFFFFFFFFFF  # signed 64-bit
-        except (ValueError, TypeError):
-            lock_key = 0
-        self.env.cr.execute(
-            "SELECT pg_advisory_xact_lock(%s)", (lock_key,),
-        )
-
-        # ── Idempotency check (re-check after acquiring lock) ────────
+        # ── Fast path — idempotency check ────────────────────────────
         existing = SaleOrder.search(
             [('x_shopify_id', '=', shopify_id)], limit=1,
         )
@@ -651,11 +666,7 @@ class ShopifySync(models.Model):
             currency = self.env.company.currency_id
             pricelist = self.env['product.pricelist'].search([], limit=1)
 
-        # ── Create sale.order (always starts as draft) ─────────────────
-        # Wrapped in a SAVEPOINT (not a full rollback) — if a concurrent
-        # caller slips past the advisory lock, the DB UNIQUE constraint
-        # is the final arbiter.  The savepoint avoids destroying the
-        # caller's outer transaction state.
+        # ── Create sale.order (savepoint + UNIQUE constraint guard) ────
         order_vals = self._prepare_sale_order_vals(
             order_data, partner, currency, pricelist,
         )
@@ -664,14 +675,17 @@ class ShopifySync(models.Model):
             with self.env.cr.savepoint():
                 sale_order = SaleOrder.create(order_vals)
         except IntegrityError:
-            # Savepoint is already rolled back; outer TX is intact
+            # UNIQUE constraint fired — another worker created this order
+            # between our idempotency check and INSERT.  The savepoint
+            # kept our outer transaction intact.
             existing = SaleOrder.search(
                 [('x_shopify_id', '=', shopify_id)], limit=1,
             )
             if existing:
                 _logger.debug(
-                    "Shopify sync: order %s already imported (race), skip",
-                    order_number,
+                    "Shopify sync: order %s created by concurrent request "
+                    "(SO #%s), skipping",
+                    order_number, existing.name,
                 )
                 return {'status': 'skipped', 'sale_order_id': existing.id}
             raise
