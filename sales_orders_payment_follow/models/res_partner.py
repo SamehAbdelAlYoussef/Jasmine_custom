@@ -52,42 +52,47 @@ class Partner(models.Model):
             #     [('partner_id', '=', self.id), ('state', '=', 'posted'), ('payment_type', '=', 'outbound')])
             # refunded_amount = sum(payment_ids.mapped('amount'))
             # rec.t_refunded_so = refunded_amount
-    @api.depends()
     def _compute_total_refunded_receivable(self):
-        """Compute total payments as refunds from receivable account lines
-        restricted to moves from cash/bank journals only.
-        """
+        """Compute total payments as refunds from receivable account lines."""
         aml = self.env['account.move.line']
         for rec in self:
+            if not rec.id or str(rec.id).startswith('NewId'):
+                rec.t_refunded = 0.0
+                continue
             total_debit = 0.0
-            if rec.property_account_receivable_id:
-                # Fetch posted move lines from receivable account for this partner
-                move_lines = aml.search([
-                    ('partner_id', '=', rec.id),
-                    ('account_id', '=', rec.property_account_receivable_id.id),
-                    ('parent_state', '=', 'posted'),
-                    ('journal_id.type', 'in', ['bank', 'cash']),
-                ])
-                # Credits represent money received (actual payments)
-                total_debit = sum(move_lines.mapped('debit'))
+            try:
+                if rec.property_account_receivable_id:
+                    move_lines = aml.search([
+                        ('partner_id', '=', rec.id),
+                        ('account_id', '=', rec.property_account_receivable_id.id),
+                        ('parent_state', '=', 'posted'),
+                        ('journal_id.type', 'in', ['bank', 'cash']),
+                    ])
+                    total_debit = sum(move_lines.mapped('debit'))
+            except Exception:
+                pass
             rec.t_refunded = total_debit
 
 
-    def action_open_paid_invoice(self):  # amount_total_signed
+    def action_open_paid_invoice(self):
         pass
 
-    # @api.depends('t_amount_so')
-    @api.depends()
     def compute_total_amount_so(self):
         for rec in self:
-            total_so_list = self.env['sale.order'].search([('partner_id', '=', rec.id)]).mapped('amount_total')
+            if not rec.id or str(rec.id).startswith('NewId'):
+                rec.t_amount_so = 0.0
+                rec.t_count_so = 0
+                continue
             rec.t_amount_so = sum(total_so_list)
             rec.t_count_so = len(total_so_list)
 
-    @api.depends()
     def compute_total_payments_report(self):
         for rec in self:
-            # import pdb;pdb.set_trace()
+            if not rec.id or str(rec.id).startswith('NewId'):
+                rec.t_payments_so = 0.0
+                rec.t_refunds_so = 0.0
+                rec.t_remaining_so = 0.0
+                continue
             paid_inbound_amount_so = self.env['account.payment'].search(
                 [('partner_id', '=', rec.id), ('state', 'in', ('in_process', 'paid')), ('payment_type', '=', 'inbound'),('sale_order_id', '!=', False),]).mapped(
                 'amount')
@@ -132,30 +137,36 @@ class Partner(models.Model):
     #             total_credit = sum(move_lines.mapped('credit'))
     #         rec.t_paid_amount = total_credit
 
-    # advanced method
-    @api.depends()
     def _compute_total_paid_receivable(self):
-        # def _compute_total_paid_receivable(self):
         aml = self.env['account.move.line']
-        partners = self.filtered(lambda p: p.property_account_receivable_id)
-        if not partners:
-            return
-        domain = [
-            ('partner_id', 'in', partners.ids),
-            ('account_id', 'in', partners.mapped('property_account_receivable_id').ids),
-            ('parent_state', '=', 'posted'),
-            ('journal_id.type', 'in', ['bank', 'cash']),
-        ]
-        grouped = aml.read_group(domain, ['partner_id', 'credit:sum'], ['partner_id'])
-        data = {g['partner_id'][0]: g['credit'] for g in grouped}
-        for rec in partners:
-            rec.t_paid_amount = data.get(rec.id, 0.0)
+        for rec in self:
+            # Skip virtual records (NewId — not yet saved)
+            if not rec.id or str(rec.id).startswith('NewId'):
+                rec.t_paid_amount = 0.0
+                continue
+            try:
+                if not rec.property_account_receivable_id:
+                    rec.t_paid_amount = 0.0
+                    continue
+                domain = [
+                    ('partner_id', '=', rec.id),
+                    ('account_id', '=', rec.property_account_receivable_id.id),
+                    ('parent_state', '=', 'posted'),
+                    ('journal_id.type', 'in', ['bank', 'cash']),
+                ]
+                grouped = aml.read_group(domain, ['credit:sum'], [])
+                credit = grouped[0]['credit'] if grouped and grouped[0].get('credit') else 0.0
+                rec.t_paid_amount = credit
+            except Exception:
+                rec.t_paid_amount = 0.0
 
 
-    @api.depends()
     def compute_total_remaining(self):
         for rec in self:
-            rec.t_remaining_amount = rec.t_amount_so - rec.t_paid_amount + rec.t_refunded
+            try:
+                rec.t_remaining_amount = rec.t_amount_so - rec.t_paid_amount + rec.t_refunded
+            except Exception:
+                rec.t_remaining_amount = 0.0
             # total_remaning_recieve_amount = self.env['account.payment'].search(
             #     [('partner_id', '=', rec.id), ('state', '=', 'posted'), ('payment_type', '=', 'inbound')]).mapped(
             #     'amount_company_currency_signed')

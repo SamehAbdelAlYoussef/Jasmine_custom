@@ -41,13 +41,8 @@ class SaleOrder(models.Model):
              "as account.payment records for this order.",
     )
 
-    _sql_constraints = [
-        (
-            'unique_shopify_id',
-            'UNIQUE(x_shopify_id)',
-            'A sale order with this Shopify Order ID already exists.',
-        ),
-    ]
+    # Idempotency enforced in _process_single_order via x_shopify_id search
+    # + IntegrityError handler.  No DB constraint needed (Odoo 19 compat).
 
     def action_sync_shopify_payments(self):
         """Manually trigger Shopify payment sync for this order.

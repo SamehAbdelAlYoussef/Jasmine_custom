@@ -60,7 +60,7 @@ class ShopifySync(models.Model):
              "syncs safely.",
     )
     last_sync_count = fields.Integer(
-        string='Orders Fetched from API',
+        string='Orders Fetched (Last Sync)',
     )
     sync_state = fields.Selection(
         selection=[
@@ -645,44 +645,40 @@ class ShopifySync(models.Model):
                 return {'status': 'skipped', 'sale_order_id': existing.id}
             raise
 
-        # ── Order lines (BEFORE confirm — must exist before any
-        #    automation triggered by the state transition) ────────────
+        # ── Order lines — skip if already populated ──────────────────
         line_errors = 0
-        for item in order_data.get('line_items', []):
-            try:
-                self._create_order_line(sale_order, item)
-            except Exception as exc:
-                line_errors += 1
-                _logger.warning(
-                    "Shopify sync: line '%s' failed for order #%s — %s",
-                    item.get('title', '?'), order_number, exc,
-                )
-
-        # ── Shipping line (BEFORE confirm) ────────────────────────────
-        try:
-            self._create_shipping_line(sale_order, order_data)
-        except Exception as exc:
-            _logger.warning(
-                "Shopify sync: shipping line failed for #%s — %s",
-                order_number, exc,
+        if sale_order.order_line:
+            _logger.debug(
+                "Shopify sync: SO %s already has lines, skipping line creation",
+                sale_order.name,
             )
+        else:
+            for item in order_data.get('line_items', []):
+                try:
+                    self._create_order_line(sale_order, item)
+                except Exception as exc:
+                    line_errors += 1
+                    _logger.warning(
+                        "Shopify sync: line '%s' failed for order #%s — %s",
+                        item.get('title', '?'), order_number, exc,
+                    )
 
-        # ── Confirm if paid (draft → sale) ────────────────────────────
-        # Now that lines exist, confirming is safe.
-        financial_status = order_data.get('financial_status', '')
-        if financial_status == 'paid':
+        # ── Shipping line ────────────────────────────────────────────
+        if not sale_order.order_line or not any(
+            l.product_id.name == 'Shopify Shipping' for l in sale_order.order_line
+        ):
             try:
-                sale_order.action_confirm()
+                self._create_shipping_line(sale_order, order_data)
             except Exception as exc:
                 _logger.warning(
-                    "Shopify sync: action_confirm failed for order #%s — %s",
+                    "Shopify sync: shipping line failed for #%s — %s",
                     order_number, exc,
                 )
-        # 'pending', 'partially_paid', 'refunded', 'voided', etc.
-        # stay as draft — the user will review them manually.
+
+        # ── Always stay as draft / quotation ──────────────────────────
+        financial_status = order_data.get('financial_status', '')
 
         # ── Sync payments from Shopify transactions ──────────────────
-        # Always fetch transactions: paid → posted, pending → draft+note
         try:
             self._fetch_and_sync_payments(sale_order, order_data)
         except Exception as exc:
@@ -1244,12 +1240,10 @@ class ShopifySync(models.Model):
     def _update_sale_order(self, order_data):
         """Update an existing sale.order when Shopify ``orders/updated`` fires.
 
-        Updates: order lines, shipping, financial status, and totals.
-        If the sale.order doesn't exist yet, falls back to creating it.
-
-        Webhook deduplication: Shopify may fire the same webhook multiple
-        times within seconds.  We track ``webhook_last_processed`` per
-        order and skip re-processing within a 60-second window.
+        Always processes the update — deletes existing lines and recreates
+        them from the latest Shopify payload.  No dedup window because
+        orders/create → orders/updated can fire in rapid succession
+        (e.g. when a customer adds then removes items before checkout).
         """
         shopify_id = str(order_data['id'])
         order_ref = order_data.get('order_number', shopify_id)
@@ -1261,19 +1255,6 @@ class ShopifySync(models.Model):
                 "Shopify webhook: update for #%s but SO not found, creating", order_ref,
             )
             return self._process_single_order(order_data)
-
-        # ── Webhook dedup guard ────────────────────────────────────────
-        now = fields.Datetime.now()
-        if existing.webhook_last_processed:
-            delta = now - existing.webhook_last_processed
-            if delta.total_seconds() < 60:
-                _logger.debug(
-                    "Shopify webhook: update for #%s skipped "
-                    "(last processed %.0fs ago)",
-                    order_ref, delta.total_seconds(),
-                )
-                return {'status': 'skipped', 'sale_order_id': existing.id}
-        existing.webhook_last_processed = now
 
         # -- update line items (remove old, recreate) --------------------
         try:
@@ -1314,12 +1295,7 @@ class ShopifySync(models.Model):
         new_invoice_status = status_map.get(financial_status, 'to invoice')
         existing.invoice_status = new_invoice_status
 
-        # If changed to paid and still draft, confirm
-        if financial_status == 'paid' and existing.state == 'draft':
-            try:
-                existing.action_confirm()
-            except Exception:
-                pass  # already confirmed or blocked
+        # Order stays draft — manual review only
 
         existing.message_post(
             body=f"Updated from Shopify — financial_status={financial_status}",
@@ -1368,7 +1344,12 @@ class ShopifySync(models.Model):
         return {'status': 'cancelled', 'sale_order_id': existing.id}
 
     def _mark_order_paid(self, order_data):
-        """Handle ``orders/paid`` webhook — confirm + mark invoiced."""
+        """Handle ``orders/paid`` webhook — sync payments from Shopify.
+
+        Always processes the webhook to pick up the latest transaction
+        status.  No dedup window — a COD marked as paid must be reflected
+        immediately.
+        """
         shopify_id = str(order_data['id'])
         order_ref = order_data.get('order_number', shopify_id)
         SaleOrder = self.env['sale.order']
@@ -1381,14 +1362,7 @@ class ShopifySync(models.Model):
             return self._process_single_order(order_data)
 
         existing.invoice_status = 'invoiced'
-        if existing.state == 'draft':
-            try:
-                existing.action_confirm()
-            except Exception as exc:
-                _logger.warning(
-                    "Shopify webhook: confirm failed for SO %s — %s",
-                    existing.name, exc,
-                )
+        # Order stays as draft/quotation for manual review
 
         # ── Sync payments from Shopify transactions ──────────────────
         try:
