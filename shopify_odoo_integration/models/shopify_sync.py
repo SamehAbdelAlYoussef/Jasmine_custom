@@ -595,8 +595,12 @@ class ShopifySync(models.Model):
         order_number = str(order_data.get('order_number', shopify_id))
 
         # ── Advisory lock — prevent concurrent creates for same order ──
-        # hash(shopify_id) limited to signed 32-bit range for pg_advisory
-        lock_key = hash(shopify_id) & 0x7FFFFFFF
+        # Use the Shopify REST ID directly as a bigint lock key (deterministic
+        # across workers – Python ``hash()`` is randomised per process).
+        try:
+            lock_key = int(order_data['id']) & 0x7FFFFFFFFFFFFFFF  # signed 64-bit
+        except (ValueError, TypeError):
+            lock_key = 0
         self.env.cr.execute(
             "SELECT pg_advisory_xact_lock(%s)", (lock_key,),
         )
