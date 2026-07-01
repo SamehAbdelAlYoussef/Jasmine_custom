@@ -1530,3 +1530,28 @@ class ShopifySync(models.Model):
             existing.name, order_ref,
         )
         return {'status': 'fulfilled', 'sale_order_id': existing.id}
+
+
+class ShopifyDeletedOrder(models.Model):
+    """Track deleted Shopify order IDs so they are never re-created by
+    a late webhook that arrives after the ``orders/delete`` event."""
+
+    _name = 'shopify.deleted.order'
+    _description = 'Deleted Shopify Order ID'
+
+    shopify_order_id = fields.Char(
+        string='Shopify Order ID',
+        required=True,
+        index=True,
+        copy=False,
+        help="Shopify REST order ID that has been deleted from Odoo "
+             "via the orders/delete webhook.",
+    )
+
+    _sql_constraints = [
+        (
+            'unique_deleted_shopify_id',
+            'UNIQUE(shopify_order_id)',
+            'This Shopify order ID is already recorded as deleted.',
+        ),
+    ]
