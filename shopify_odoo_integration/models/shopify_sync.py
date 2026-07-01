@@ -579,6 +579,14 @@ class ShopifySync(models.Model):
         Caller is expected to set mail-suppression context via
         ``self.with_context(mail_create_nosubscribe=True, ...)``.
 
+        Race-condition protection
+        -------------------------
+        Uses a PostgreSQL **advisory lock** keyed on the Shopify order ID
+        to serialise concurrent webhooks / cron jobs for the same order.
+        ``pg_advisory_xact_lock`` blocks until the lock is acquired and
+        is automatically released at the end of the transaction, so the
+        second caller will always see the first caller's committed row.
+
         :param order_data: dict — a single Shopify REST order
         :returns: dict ``{'status': 'created'|'skipped', 'sale_order_id': int}``
         """
@@ -586,7 +594,14 @@ class ShopifySync(models.Model):
         shopify_id = str(order_data['id'])
         order_number = str(order_data.get('order_number', shopify_id))
 
-        # ── Idempotency check ───────────────────────────────────────
+        # ── Advisory lock — prevent concurrent creates for same order ──
+        # hash(shopify_id) limited to signed 32-bit range for pg_advisory
+        lock_key = hash(shopify_id) & 0x7FFFFFFF
+        self.env.cr.execute(
+            "SELECT pg_advisory_xact_lock(%s)", (lock_key,),
+        )
+
+        # ── Idempotency check (re-check after acquiring lock) ────────
         existing = SaleOrder.search(
             [('x_shopify_id', '=', shopify_id)], limit=1,
         )
@@ -622,18 +637,19 @@ class ShopifySync(models.Model):
             pricelist = self.env['product.pricelist'].search([], limit=1)
 
         # ── Create sale.order (always starts as draft) ─────────────────
-        # Wrapped in IntegrityError try/except — a concurrent webhook or
-        # cron may have created the same order between the idempotency
-        # check above and this INSERT.  The DB UNIQUE constraint acts as
-        # the final arbiter.
+        # Wrapped in a SAVEPOINT (not a full rollback) — if a concurrent
+        # caller slips past the advisory lock, the DB UNIQUE constraint
+        # is the final arbiter.  The savepoint avoids destroying the
+        # caller's outer transaction state.
         order_vals = self._prepare_sale_order_vals(
             order_data, partner, currency, pricelist,
         )
         order_vals['x_shopify_id'] = shopify_id
         try:
-            sale_order = SaleOrder.create(order_vals)
+            with self.env.cr.savepoint():
+                sale_order = SaleOrder.create(order_vals)
         except IntegrityError:
-            self.env.cr.rollback()
+            # Savepoint is already rolled back; outer TX is intact
             existing = SaleOrder.search(
                 [('x_shopify_id', '=', shopify_id)], limit=1,
             )
