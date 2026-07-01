@@ -594,6 +594,17 @@ class ShopifySync(models.Model):
         shopify_id = str(order_data['id'])
         order_number = str(order_data.get('order_number', shopify_id))
 
+        # ── Never re-create a deleted order ──────────────────────────
+        if self.env['shopify.deleted.order'].sudo().search_count(
+            [('shopify_order_id', '=', shopify_id)], limit=1,
+        ):
+            _logger.info(
+                "Shopify sync: order #%s was previously deleted, skipping",
+                order_number,
+            )
+            return {'status': 'skipped', 'sale_order_id': False,
+                    'reason': 'previously_deleted'}
+
         # ── Advisory lock — prevent concurrent creates for same order ──
         # Use the Shopify REST ID directly as a bigint lock key (deterministic
         # across workers – Python ``hash()`` is randomised per process).
@@ -1385,10 +1396,18 @@ class ShopifySync(models.Model):
         order_ref = order_data.get('order_number', shopify_id)
         SaleOrder = self.env['sale.order']
 
+        # ── Record as deleted (idempotent, prevent re-creation) ──────
+        DeletedOrder = self.env['shopify.deleted.order'].sudo()
+        if not DeletedOrder.search_count(
+            [('shopify_order_id', '=', shopify_id)], limit=1,
+        ):
+            DeletedOrder.create({'shopify_order_id': shopify_id})
+
         existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
         if not existing:
             _logger.warning(
-                "Shopify webhook: delete for #%s but SO not found in Odoo",
+                "Shopify webhook: delete for #%s but SO not found in Odoo "
+                "(recorded as deleted to prevent re-creation)",
                 order_ref,
             )
             return {'status': 'not_found', 'shopify_order': order_ref}
