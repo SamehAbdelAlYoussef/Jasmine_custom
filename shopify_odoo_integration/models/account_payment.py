@@ -32,5 +32,10 @@ class AccountPayment(models.Model):
              "'Cash on Delivery (COD)', 'Paymob').",
     )
 
-    # Idempotency is enforced at Python level in _fetch_and_sync_payments
-    # via x_shopify_txn_id search — no DB constraint needed.
+    _sql_constraints = [
+        (
+            'unique_shopify_txn_id',
+            'UNIQUE(x_shopify_txn_id)',
+            'A payment with this Shopify Transaction ID already exists.',
+        ),
+    ]
