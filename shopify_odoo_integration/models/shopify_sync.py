@@ -1264,6 +1264,10 @@ class ShopifySync(models.Model):
         them from the latest Shopify payload.  No dedup window because
         orders/create → orders/updated can fire in rapid succession
         (e.g. when a customer adds then removes items before checkout).
+
+        If the order does not exist yet (race with orders/create), calls
+        ``_process_single_order`` and then continues applying the update
+        on the newly-created or concurrently-created order.
         """
         shopify_id = str(order_data['id'])
         order_ref = order_data.get('order_number', shopify_id)
@@ -1274,7 +1278,19 @@ class ShopifySync(models.Model):
             _logger.info(
                 "Shopify webhook: update for #%s but SO not found, creating", order_ref,
             )
-            return self._process_single_order(order_data)
+            result = self._process_single_order(order_data)
+            # Re-fetch — the order may have been created by our call or by a
+            # concurrent webhook that already committed (advisory lock ensures
+            # we see the committed row).
+            existing = SaleOrder.search(
+                [('x_shopify_id', '=', shopify_id)], limit=1,
+            )
+            if not existing:
+                _logger.error(
+                    "Shopify webhook: update for #%s — unable to create or find SO",
+                    order_ref,
+                )
+                return result
 
         # -- update line items (remove old, recreate) --------------------
         try:
@@ -1398,6 +1414,11 @@ class ShopifySync(models.Model):
         Always processes the webhook to pick up the latest transaction
         status.  No dedup window — a COD marked as paid must be reflected
         immediately.
+
+        If the order does not exist yet (race with orders/updated or
+        orders/create), calls ``_process_single_order`` and then continues
+        applying the paid status on the newly-created or concurrently-
+        created order.
         """
         shopify_id = str(order_data['id'])
         order_ref = order_data.get('order_number', shopify_id)
@@ -1408,7 +1429,19 @@ class ShopifySync(models.Model):
             _logger.info(
                 "Shopify webhook: paid for #%s but SO not found, creating", order_ref,
             )
-            return self._process_single_order(order_data)
+            result = self._process_single_order(order_data)
+            # Re-fetch — the order may have been created by our call or by a
+            # concurrent webhook that already committed (advisory lock ensures
+            # we see the committed row).
+            existing = SaleOrder.search(
+                [('x_shopify_id', '=', shopify_id)], limit=1,
+            )
+            if not existing:
+                _logger.error(
+                    "Shopify webhook: paid for #%s — unable to create or find SO",
+                    order_ref,
+                )
+                return result
 
         existing.invoice_status = 'invoiced'
         # Order stays as draft/quotation for manual review
@@ -1430,17 +1463,32 @@ class ShopifySync(models.Model):
         return {'status': 'paid', 'sale_order_id': existing.id}
 
     def _note_fulfillment(self, order_data):
-        """Handle ``orders/fulfilled`` — post fulfillment info on SO."""
+        """Handle ``orders/fulfilled`` — post fulfillment info on SO.
+
+        If the order does not exist yet (race with orders/create or
+        orders/updated), waits for it via ``_process_single_order`` and
+        then posts the fulfilment note on the newly-created order.
+        """
         shopify_id = str(order_data['id'])
         order_ref = order_data.get('order_number', shopify_id)
         SaleOrder = self.env['sale.order']
 
         existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
         if not existing:
-            _logger.warning(
-                "Shopify webhook: fulfilled for #%s but SO not found", order_ref,
+            _logger.info(
+                "Shopify webhook: fulfilled for #%s but SO not found, creating",
+                order_ref,
             )
-            return {'status': 'not_found', 'shopify_order': order_ref}
+            self._process_single_order(order_data)
+            existing = SaleOrder.search(
+                [('x_shopify_id', '=', shopify_id)], limit=1,
+            )
+            if not existing:
+                _logger.error(
+                    "Shopify webhook: fulfilled for #%s — unable to create or find SO",
+                    order_ref,
+                )
+                return {'status': 'not_found', 'shopify_order': order_ref}
 
         fulfillments = order_data.get('fulfillments', [])
         if fulfillments:
