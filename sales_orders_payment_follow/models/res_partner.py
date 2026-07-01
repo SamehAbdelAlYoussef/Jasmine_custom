@@ -83,6 +83,9 @@ class Partner(models.Model):
                 rec.t_amount_so = 0.0
                 rec.t_count_so = 0
                 continue
+            total_so_list = self.env['sale.order'].search(
+                [('partner_id', '=', rec.id)]
+            ).mapped('amount_total')
             rec.t_amount_so = sum(total_so_list)
             rec.t_count_so = len(total_so_list)
 
