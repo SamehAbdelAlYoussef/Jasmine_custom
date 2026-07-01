@@ -41,13 +41,10 @@ class SaleOrder(models.Model):
              "as account.payment records for this order.",
     )
 
-    _sql_constraints = [
-        (
-            'unique_shopify_id',
-            'UNIQUE(x_shopify_id)',
-            'A sale order with this Shopify Order ID already exists.',
-        ),
-    ]
+    _unique_shopify_id = models.Constraint(
+        'UNIQUE(x_shopify_id)',
+        'A sale order with this Shopify Order ID already exists.',
+    )
 
     def action_sync_shopify_payments(self):
         """Manually trigger Shopify payment sync for this order.

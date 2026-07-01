@@ -1548,10 +1548,7 @@ class ShopifyDeletedOrder(models.Model):
              "via the orders/delete webhook.",
     )
 
-    _sql_constraints = [
-        (
-            'unique_deleted_shopify_id',
-            'UNIQUE(shopify_order_id)',
-            'This Shopify order ID is already recorded as deleted.',
-        ),
-    ]
+    _unique_deleted_shopify_id = models.Constraint(
+        'UNIQUE(shopify_order_id)',
+        'This Shopify order ID is already recorded as deleted.',
+    )
