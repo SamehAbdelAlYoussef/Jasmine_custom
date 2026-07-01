@@ -1114,9 +1114,23 @@ class ShopifySync(models.Model):
                 [('x_shopify_txn_id', '=', txn_id)], limit=1,
             )
             if existing_payment:
-                _logger.debug(
-                    "Shopify payment sync: txn %s already imported, skip", txn_id,
-                )
+                # If previously pending (draft) → now success, post it
+                if status == 'success' and existing_payment.state == 'draft':
+                    try:
+                        existing_payment.action_post()
+                        _logger.info(
+                            "Shopify payment sync: txn %s moved draft→posted "
+                            "(COD now paid)", txn_id,
+                        )
+                    except Exception as exc:
+                        _logger.warning(
+                            "Shopify payment sync: failed to post draft txn %s — %s",
+                            txn_id, exc,
+                        )
+                else:
+                    _logger.debug(
+                        "Shopify payment sync: txn %s already imported, skip", txn_id,
+                    )
                 continue
 
             # ── Determine payment type ──────────────────────────────
@@ -1127,16 +1141,18 @@ class ShopifySync(models.Model):
 
             # ── Handle by status ────────────────────────────────────
             if status == 'success':
-                # Create payment as draft — let the user manually validate/post
+                # Completed payment → create + post, stays draft for manual review
                 try:
                     vals = self._prepare_payment_vals(
                         txn, sale_order, sale_order.partner_id, payment_type,
                     )
                     payment = Payment.create(vals)
-                    # Keep payment in draft state — manual review required
+                    payment.action_post()
+                    # Keep as draft for manual review
+                    payment.sudo().write({'state': 'draft'})
                     created_count += 1
                     _logger.info(
-                        "Shopify payment sync: created draft payment %s for SO %s "
+                        "Shopify payment sync: payment %s for SO %s "
                         "(txn=%s, amount=%s, type=%s)",
                         payment.name, sale_order.name, txn_id,
                         amount, payment_type,
