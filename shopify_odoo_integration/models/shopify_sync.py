@@ -1235,7 +1235,7 @@ class ShopifySync(models.Model):
         })
 
     # -----------------------------------------------------------------
-    # Webhook handlers — update / cancel / paid / fulfilled
+    # Webhook handlers — delete / update / cancel / paid / fulfilled
     # -----------------------------------------------------------------
     def _update_sale_order(self, order_data):
         """Update an existing sale.order when Shopify ``orders/updated`` fires.
@@ -1342,6 +1342,35 @@ class ShopifySync(models.Model):
             existing.name, order_ref, cancel_reason,
         )
         return {'status': 'cancelled', 'sale_order_id': existing.id}
+
+    def _delete_sale_order(self, order_data):
+        """Delete the sale.order when Shopify ``orders/delete`` fires."""
+        shopify_id = str(order_data['id'])
+        order_ref = order_data.get('order_number', shopify_id)
+        SaleOrder = self.env['sale.order']
+
+        existing = SaleOrder.search([('x_shopify_id', '=', shopify_id)], limit=1)
+        if not existing:
+            _logger.warning(
+                "Shopify webhook: delete for #%s but SO not found in Odoo",
+                order_ref,
+            )
+            return {'status': 'not_found', 'shopify_order': order_ref}
+
+        so_name = existing.name
+        try:
+            existing.unlink()
+            _logger.info(
+                "Shopify webhook: deleted SO %s for Shopify #%s",
+                so_name, order_ref,
+            )
+            return {'status': 'deleted', 'sale_order_name': so_name}
+        except Exception as exc:
+            _logger.error(
+                "Shopify webhook: failed to delete SO %s — %s",
+                so_name, exc, exc_info=True,
+            )
+            return {'status': 'error', 'message': str(exc)}
 
     def _mark_order_paid(self, order_data):
         """Handle ``orders/paid`` webhook — sync payments from Shopify.

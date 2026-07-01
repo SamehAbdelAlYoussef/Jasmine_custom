@@ -6,6 +6,7 @@ Supported Shopify topics (configure these in Shopify Admin → Settings → Noti
     - orders/create    → create sale.order
     - orders/updated   → update existing sale.order lines / totals / state
     - orders/cancelled → cancel sale.order in Odoo
+    - orders/delete    → delete sale.order from Odoo
     - orders/paid      → confirm sale.order (draft → sale) + mark invoiced
     - orders/fulfilled → post a note on the SO
 
@@ -85,6 +86,8 @@ class ShopifyWebhookController(http.Controller):
         try:
             if topic == 'orders/cancelled':
                 result = sync._cancel_sale_order(order_data)
+            elif topic == 'orders/delete':
+                result = sync._delete_sale_order(order_data)
             elif topic in ('orders/updated', 'orders/edited'):
                 result = sync._update_sale_order(order_data)
             elif topic == 'orders/paid':
@@ -181,6 +184,31 @@ class ShopifyWebhookController(http.Controller):
             return self._ok(result)
         except Exception as exc:
             _logger.error("Shopify webhook: cancel order #%s failed — %s", order_ref, exc)
+            return self._error(str(exc), 500)
+
+    # -- dedicated route for orders/delete ------------------------------
+    @http.route(
+        '/shopify/webhook/orders/delete',
+        type='http',
+        auth='public',
+        methods=['POST'],
+        csrf=False,
+    )
+    def receive_order_delete(self, **kwargs):
+        """Handle orders/delete webhook."""
+        order_data = self._parse_json()
+        if order_data is None:
+            return self._error('Invalid JSON', 400)
+
+        order_ref = order_data.get('order_number', '?')
+        _logger.info("Shopify webhook: [orders/delete] order #%s", order_ref)
+
+        try:
+            sync = self._get_sync_record()
+            result = sync._delete_sale_order(order_data)
+            return self._ok(result)
+        except Exception as exc:
+            _logger.error("Shopify webhook: delete order #%s failed — %s", order_ref, exc)
             return self._error(str(exc), 500)
 
     # -- dedicated route for orders/paid --------------------------------
