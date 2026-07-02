@@ -25,3 +25,51 @@ portainer
 https://sh.erp-jasmine.com/
 nginx
 https://nginx.erp-jasmine.com/
+
+///////////////////////////////////////////////////////////////----Backup db---////////////////////////
+cd /opt/odoo_docker
+./backup.sh
+
+///////////////////////////////////////////////////////////////----Backup restore---////////////////////////
+cd /opt/odoo_docker
+./restore.sh /opt/odoo_docker/backups/
+
+
+download from gdrive //////////////////////////////////////////////////////
+rclone copy gdrive:odoo_backups/2026-07-01/name file /tmp/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 1. فك الضغط
+mkdir -p /tmp/restore_manual
+tar -xzf /opt/odoo_docker/backups/odoo_full_backup_20260701_160948.tar.gz -C /tmp/restore_manual
+
+# 2. إيقاف الحاويات (اختياري)
+docker-compose -f /opt/odoo_docker/docker-compose.yml down
+
+# 3. استعادة قاعدة البيانات
+docker exec -i odoo_docker-db_ent-1 psql -U odoo -d postgres < /tmp/restore_manual/odoo_db_*.sql
+
+# 4. استعادة الـ Filestore
+docker exec odoo_docker-web_ent-1 rm -rf /var/lib/odoo/filestore
+tar -xzf /tmp/restore_manual/filestore_backup.tar.gz -C /tmp/
+docker cp /tmp/filestore odoo_docker-web_ent-1:/var/lib/odoo/
+docker exec odoo_docker-web_ent-1 chown -R odoo:odoo /var/lib/odoo/filestore
+
+# 5. تشغيل الحاويات تاني
+docker-compose -f /opt/odoo_docker/docker-compose.yml up -d
+
+# 6. تنظيف
+rm -rf /tmp/restore_manual /tmp/filestore
