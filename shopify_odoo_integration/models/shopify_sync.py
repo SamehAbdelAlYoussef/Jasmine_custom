@@ -576,31 +576,56 @@ class ShopifySync(models.Model):
         """Ensure the UNIQUE constraint on ``sale.order.x_shopify_id``
         and ``shopify.deleted.order.shopify_order_id`` exist in PostgreSQL.
 
-        Called at the beginning of every ``_process_single_order`` call
-        (very cheap after the first call — checks ``pg_constraint``).
+        Cleans up old duplicate rows first so the constraint always succeeds.
+        Runs inside a SAVEPOINT so a failure here never breaks the caller's
+        outer transaction.
         """
-        self.env.cr.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM pg_constraint
-                    WHERE conname = 'unique_shopify_id'
-                      AND contype = 'u'
-                ) THEN
-                    ALTER TABLE sale_order
-                    ADD CONSTRAINT unique_shopify_id UNIQUE (x_shopify_id);
-                END IF;
-                IF NOT EXISTS (
-                    SELECT 1 FROM pg_constraint
-                    WHERE conname = 'unique_deleted_shopify_id'
-                      AND contype = 'u'
-                ) THEN
-                    ALTER TABLE shopify_deleted_order
-                    ADD CONSTRAINT unique_deleted_shopify_id
-                    UNIQUE (shopify_order_id);
-                END IF;
-            END $$;
-        """)
+        try:
+            with self.env.cr.savepoint():
+                self.env.cr.execute("""
+                    DO $$
+                    BEGIN
+                        -- 1. Clean old duplicates (keep lowest ID)
+                        DELETE FROM sale_order
+                        WHERE id IN (
+                            SELECT id FROM (
+                                SELECT id, ROW_NUMBER() OVER (
+                                    PARTITION BY x_shopify_id ORDER BY id
+                                ) AS rn
+                                FROM sale_order
+                                WHERE x_shopify_id IS NOT NULL
+                            ) sub
+                            WHERE sub.rn > 1
+                        );
+
+                        -- 2. Create sale_order constraint
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint
+                            WHERE conname = 'unique_shopify_id'
+                              AND contype = 'u'
+                        ) THEN
+                            ALTER TABLE sale_order
+                            ADD CONSTRAINT unique_shopify_id
+                            UNIQUE (x_shopify_id);
+                        END IF;
+
+                        -- 3. Create deleted orders constraint
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint
+                            WHERE conname = 'unique_deleted_shopify_id'
+                              AND contype = 'u'
+                        ) THEN
+                            ALTER TABLE shopify_deleted_order
+                            ADD CONSTRAINT unique_deleted_shopify_id
+                            UNIQUE (shopify_order_id);
+                        END IF;
+                    END $$;
+                """)
+        except Exception:
+            _logger.warning(
+                "Shopify sync: constraint setup failed (will retry next call)",
+                exc_info=True,
+            )
 
     def _process_single_order(self, order_data):
         """Create or skip **one** sale.order from a Shopify order dict.
@@ -952,43 +977,37 @@ class ShopifySync(models.Model):
         return (value or '').strip()
 
     def _create_order_line(self, sale_order, item):
-        try:
-            product = self._get_or_create_product(item)
-        except Exception:
-            product = self._get_generic_product()
+        """Create a sale.order.line from a Shopify line item.
 
+        Searches for the product by SKU then by name.  If the product is
+        **not** found in Odoo, the line is still created but with no
+        product linked and the ``x_is_missing_product`` flag set so users
+        can easily spot lines that need attention.
+        """
         title = self._safe_strip(item.get('title') or item.get('name')) or 'Product'
+        sku = self._safe_strip(item.get('sku'))
+        product = self._find_product(sku, title)
 
         vals = {
             'order_id': sale_order.id,
-            'product_id': product.id,
+            'product_id': product.id if product else False,
             'product_uom_qty': item.get('quantity', 1),
             'price_unit': float(item.get('price', 0.0)),
             'name': title,
         }
 
-        sku = self._safe_strip(item.get('sku'))
-        if sku:
-            product_by_sku = self.env['product.product'].search(
-                [('default_code', '=', sku)], limit=1,
-            )
-            if product_by_sku:
-                vals['product_id'] = product_by_sku.id
+        if not product:
+            vals['x_is_missing_product'] = True
+            vals['x_shopify_product_name'] = title
 
         return self.env['sale.order.line'].create(vals)
 
-    def _get_generic_product(self):
-        Product = self.env['product.product']
-        generic = Product.search([('name', '=', 'Shopify Product')], limit=1)
-        return generic or Product.create({
-            'name': 'Shopify Product', 'type': 'service',
-        })
+    def _find_product(self, sku, title):
+        """Look up a product by SKU then by name.
 
-    def _get_or_create_product(self, item):
+        :returns: ``product.product`` record or an empty recordset
+        """
         Product = self.env['product.product']
-        title = self._safe_strip(item.get('title') or item.get('name'))
-        sku = self._safe_strip(item.get('sku'))
-
         if sku:
             product = Product.search([('default_code', '=', sku)], limit=1)
             if product:
@@ -997,15 +1016,7 @@ class ShopifySync(models.Model):
             product = Product.search([('name', '=', title)], limit=1)
             if product:
                 return product
-
-        return Product.create({
-            'name': title or f"Product {item.get('product_id', '?')}",
-            'type': 'consu',
-            'default_code': sku or '',
-            'list_price': float(item.get('price', 0.0)),
-            'sale_ok': True,
-            'purchase_ok': False,
-        })
+        return Product
 
     def _create_shipping_line(self, sale_order, shopify_order):
         """Create a shipping line on the sale order.

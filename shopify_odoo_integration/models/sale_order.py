@@ -11,7 +11,27 @@ duplicate orders even during concurrent webhook+cron races that
 slip past the Python-level idempotency check.
 """
 
-from odoo import fields, models
+from odoo import api, fields, models
+
+
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    x_is_missing_product = fields.Boolean(
+        string='Product Not Found',
+        default=False,
+        copy=False,
+        help="The Shopify product was not found in the Odoo catalogue "
+             "when this order was imported.",
+    )
+
+    x_shopify_product_name = fields.Char(
+        string='Shopify Product Name',
+        copy=False,
+        readonly=True,
+        help="Original product name from Shopify (used when the product "
+             "was not found in Odoo).",
+    )
 
 
 class SaleOrder(models.Model):
@@ -41,10 +61,25 @@ class SaleOrder(models.Model):
              "as account.payment records for this order.",
     )
 
+    x_has_missing_products = fields.Boolean(
+        string='Missing Products',
+        compute='_compute_x_has_missing_products',
+        store=True,
+        help="This sale order contains products that are not available "
+             "in the Odoo product catalogue.",
+    )
+
     _unique_shopify_id = models.Constraint(
         'UNIQUE(x_shopify_id)',
         'A sale order with this Shopify Order ID already exists.',
     )
+
+    @api.depends('order_line.x_is_missing_product')
+    def _compute_x_has_missing_products(self):
+        for order in self:
+            order.x_has_missing_products = any(
+                line.x_is_missing_product for line in order.order_line
+            )
 
     def action_sync_shopify_payments(self):
         """Manually trigger Shopify payment sync for this order.

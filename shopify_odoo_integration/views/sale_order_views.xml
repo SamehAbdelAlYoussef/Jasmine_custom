@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ── Sale Order Tree: Add Shopify ID column ────────────────────── -->
+    <!-- ── Sale Order Tree: Add Shopify ID + Missing Products columns ── -->
     <record id="view_order_tree_shopify" model="ir.ui.view">
         <field name="name">sale.order.tree.shopify</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_tree"/>
         <field name="arch" type="xml">
             <field name="client_order_ref" position="after">
+                <field name="x_has_missing_products"
+                       string="Missing Products"
+                       widget="boolean_toggle"
+                       optional="show"/>
                 <field name="x_shopify_id"
                        string="Shopify"
                        optional="hide"
@@ -32,12 +36,28 @@
 
             <!-- Shopify fields -->
             <field name="client_order_ref" position="after">
+                <field name="x_has_missing_products"
+                       widget="boolean_fa_icon"
+                       string="Missing Products"/>
                 <field name="x_shopify_id"
                        string="Shopify ID"
                        readonly="1"
                        groups="base.group_system"/>
                 <field name="x_shopify_payment_synced" invisible="1"/>
             </field>
+
+            <!-- Show missing-product fields in the order lines -->
+            <xpath expr="//field[@name='order_line']//field[@name='name']"
+                   position="after">
+                <field name="x_is_missing_product"
+                       string="Missing"
+                       widget="boolean_toggle"
+                       optional="show"/>
+                <field name="x_shopify_product_name"
+                       string="Shopify Product"
+                       optional="hide"
+                       invisible="1"/>
+            </xpath>
         </field>
     </record>
 </odoo>
