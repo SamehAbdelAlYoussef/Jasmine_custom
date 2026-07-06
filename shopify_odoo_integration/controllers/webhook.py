@@ -7,7 +7,7 @@ Supported Shopify topics (configure these in Shopify Admin → Settings → Noti
     - orders/updated   → update existing sale.order lines / totals / state
     - orders/cancelled → cancel sale.order in Odoo
     - orders/delete    → delete sale.order from Odoo
-    - orders/paid      → confirm sale.order (draft → sale) + mark invoiced
+    - orders/paid      → confirm sale.order (draft → sale) -- + mark invoiced
     - orders/fulfilled → post a note on the SO
 
 All endpoints read the ``X-Shopify-Topic`` header to distinguish the
