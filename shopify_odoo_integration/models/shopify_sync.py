@@ -1125,17 +1125,17 @@ class ShopifySync(models.Model):
                 [('x_shopify_txn_id', '=', txn_id)], limit=1,
             )
             if existing_payment:
-                # If previously pending (draft) → now success, post it
-                if status == 'success' and existing_payment.state == 'draft':
+                # If previously in progress → now success, post it
+                if status == 'success' and existing_payment.state == 'in_progress':
                     try:
                         existing_payment.action_post()
                         _logger.info(
-                            "Shopify payment sync: txn %s moved draft→posted "
-                            "(COD now paid)", txn_id,
+                            "Shopify payment sync: txn %s moved in_progress→posted",
+                            txn_id,
                         )
                     except Exception as exc:
                         _logger.warning(
-                            "Shopify payment sync: failed to post draft txn %s — %s",
+                            "Shopify payment sync: failed to post txn %s — %s",
                             txn_id, exc,
                         )
                 else:
@@ -1152,15 +1152,15 @@ class ShopifySync(models.Model):
 
             # ── Handle by status ────────────────────────────────────
             if status == 'success':
-                # Completed payment → create + post, stays draft for manual review
+                # Completed payment → create + post, set to in_progress for manual review
                 try:
                     vals = self._prepare_payment_vals(
                         txn, sale_order, sale_order.partner_id, payment_type,
                     )
                     payment = Payment.create(vals)
                     payment.action_post()
-                    # Keep as draft for manual review
-                    payment.sudo().write({'state': 'draft'})
+                    # Set to in_progress — user must validate to move to paid
+                    payment.sudo().write({'state': 'in_progress'})
                     created_count += 1
                     _logger.info(
                         "Shopify payment sync: payment %s for SO %s "
