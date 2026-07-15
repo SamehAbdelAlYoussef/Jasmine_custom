@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══════════════════════════════════════════════════════════════════
+         Wizard: Import Shopify Orders by Date Range
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="shopify_order_import_wizard_form" model="ir.ui.view">
+        <field name="name">shopify.order.import.wizard.form</field>
+        <field name="model">shopify.order.import.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group string="Import Shopify Orders by Date Range"
+                           colspan="2">
+                        <group string="Date Range">
+                            <field name="date_from"
+                                   widget="date"
+                                   required="1"/>
+                            <field name="date_to"
+                                   widget="date"
+                                   required="1"/>
+                        </group>
+                        <group string="Progress"
+                               invisible="state == 'draft'">
+                            <field name="state"
+                                   widget="badge"
+                                   decoration-warning="state == 'running'"
+                                   decoration-success="state == 'done'"/>
+                            <field name="orders_fetched"
+                                   string="Orders Fetched"/>
+                            <field name="orders_created"
+                                   string="Orders Created"/>
+                            <field name="orders_skipped"
+                                   string="Orders Skipped"/>
+                            <field name="orders_failed"
+                                   string="Orders Failed"
+                                   invisible="not orders_failed"/>
+                        </group>
+                    </group>
+
+                    <div class="text-center oe_import_note"
+                         invisible="state != 'draft'">
+                        <p class="text-muted">
+                            This will fetch <b>ALL</b> Shopify orders
+                            created between the two dates (including
+                            both days).  Orders that already exist in
+                            Odoo will be skipped automatically.
+                        </p>
+                    </div>
+
+                    <footer>
+                        <button name="action_import_orders"
+                                string="Start Import"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'draft'"
+                                confirm="Fetch ALL Shopify orders from the selected date range? This may take a few minutes for large ranges."/>
+                        <button string="Close"
+                                class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Action (opens wizard in a dialog)
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="action_shopify_order_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Shopify Orders by Date</field>
+        <field name="res_model">shopify.order.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Menu item (under Shopify Sync)
+         ════════════════════════════════════════════════════════════════ -->
+    <menuitem
+        id="menu_shopify_order_import_wizard"
+        name="Import Orders by Date Range"
+        parent="menu_shopify_sync"
+        action="action_shopify_order_import_wizard"
+        sequence="10"
+    />
+
+</odoo>

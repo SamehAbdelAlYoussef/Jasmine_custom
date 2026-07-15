@@ -20,6 +20,7 @@
         'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
         'data/ir_cron_stock_sync.xml',
+        'views/shopify_order_import_wizard_views.xml',
         'views/res_config_settings_views.xml',
         'views/shopify_sync_views.xml',
         'views/shopify_product_binding_views.xml',

@@ -5,3 +5,5 @@ access_shopify_product_binding_system,shopify.product.binding.system,model_shopi
 access_shopify_product_binding_user,shopify.product.binding.user,model_shopify_product_binding,base.group_user,1,0,0,0
 access_shopify_stock_queue_system,shopify.stock.queue.system,model_shopify_stock_queue,base.group_system,1,1,1,1
 access_shopify_stock_queue_user,shopify.stock.queue.user,model_shopify_stock_queue,base.group_user,1,0,0,0
+access_shopify_order_import_wizard_system,shopify.order.import.wizard.system,model_shopify_order_import_wizard,base.group_system,1,1,1,1
+access_shopify_order_import_wizard_user,shopify.order.import.wizard.user,model_shopify_order_import_wizard,base.group_user,1,1,1,1

@@ -47,6 +47,15 @@
                                 class="btn btn-secondary"
                             />
                         </div>
+                        <div class="mt-2 text-center">
+                            <button
+                                name="%(shopify_odoo_integration.action_shopify_order_import_wizard)d"
+                                string="Import Orders by Date Range"
+                                type="action"
+                                class="btn btn-secondary"
+                                help="Fetch Shopify orders created between two dates and import missing ones."
+                            />
+                        </div>
                     </block>
 
                     <block title="Inventory Sync" name="shopify_inventory_settings">
