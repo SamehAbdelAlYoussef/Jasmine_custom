@@ -1157,6 +1157,11 @@ class ShopifySync(models.Model):
         The method always creates a line when Shopify has ``shipping_lines``,
         even when the effective price is zero — this preserves the shipping
         title / method for reporting.
+
+        When a shipping-targeted discount exists, the line is created at the
+        **gross** price with a percentage ``discount`` applied on the Odoo
+        line.  This makes the discount visible in the Odoo UI instead of
+        silently reducing the unit price.
         """
         shipping_lines = shopify_order.get('shipping_lines', [])
         if not shipping_lines:
@@ -1176,7 +1181,22 @@ class ShopifySync(models.Model):
                 except (ValueError, TypeError):
                     pass
 
+        _logger.info(
+            "Shopify shipping: order #%s — gross=%.2f, discount_total=%.2f, "
+            "raw shipping_lines=%s, raw discount_applications=%s",
+            shopify_order.get('order_number', '?'),
+            gross_price,
+            shipping_discount_total,
+            shipping_lines,
+            discount_applications,
+        )
+
         net_price = max(0.0, gross_price - shipping_discount_total)
+
+        # Calculate line discount percentage (Odoo discount field is 0–100)
+        discount_pct = 0.0
+        if gross_price > 0 and shipping_discount_total > 0:
+            discount_pct = min(100.0, (shipping_discount_total / gross_price) * 100.0)
 
         # -- get-or-create the Shopify Shipping service product -------------
         Product = self.env['product.product']
@@ -1190,8 +1210,12 @@ class ShopifySync(models.Model):
             })
 
         # -- label ----------------------------------------------------------
-        if net_price == 0.0 and shipping_discount_total > 0.0:
-            label = f"Shipping: {title} (Free - discount applied)"
+        if shipping_discount_total > 0:
+            label = (
+                f"Shipping: {title} "
+                f"(Discount: {shipping_discount_total:,.2f} — "
+                f"Net: {net_price:,.2f})"
+            )
         elif net_price == 0.0:
             label = f"Shipping: {title} (Free)"
         else:
@@ -1201,7 +1225,8 @@ class ShopifySync(models.Model):
             'order_id': sale_order.id,
             'product_id': delivery.id,
             'product_uom_qty': 1,
-            'price_unit': net_price,
+            'price_unit': gross_price,
+            'discount': discount_pct,
             'name': label,
         })
 
