@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Cron: Process the Shopify stock-sync queue every 5 minutes.
+
+        When stock.quant quantities change for products that have a
+        shopify.product.binding with sync_inventory=True, a pending
+        queue record is created / updated.  This cron picks up those
+        records and pushes the absolute available quantity to Shopify
+        via POST /admin/api/{version}/inventory_levels/set.json.
+
+        Rate-limiting is handled per-request by the same _check_rate_limit
+        helper used by the order-sync engine.
+    -->
+    <record id="ir_cron_shopify_stock_sync" model="ir.cron">
+        <field name="name">Shopify: Sync Stock Queue</field>
+        <field name="model_id" ref="model_shopify_stock_queue"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_process_stock_queue()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="False"/>
+    </record>
+</odoo>

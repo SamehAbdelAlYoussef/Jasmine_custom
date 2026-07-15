@@ -153,6 +153,73 @@ class ShopifySync(models.Model):
             time.sleep(RATE_LIMIT_SLEEP)
 
     # -----------------------------------------------------------------
+    # Generic API helpers (GET / POST / PUT) — unified HTTP methods
+    # with rate-limit awareness and error handling.
+    # -----------------------------------------------------------------
+    def _shopify_api_get(self, endpoint, timeout=30):
+        """Make a GET request to the Shopify REST API and return the
+        parsed JSON body.  Rate-limit checked after the call."""
+        url = f"{self._get_api_base()}{endpoint}"
+        headers = self._get_shopify_headers()
+        response = requests.get(url, headers=headers, timeout=timeout)
+        self._check_rate_limit(response.headers)
+        response.raise_for_status()
+        return response.json() if response.text else {}
+
+    def _shopify_api_post(self, endpoint, data, timeout=30):
+        """Make a POST request to the Shopify REST API and return the
+        parsed JSON body.  Rate-limit checked after the call."""
+        url = f"{self._get_api_base()}{endpoint}"
+        headers = self._get_shopify_headers()
+        response = requests.post(url, headers=headers, json=data, timeout=timeout)
+        self._check_rate_limit(response.headers)
+        response.raise_for_status()
+        return response.json() if response.text else {}
+
+    def _shopify_api_put(self, endpoint, data, timeout=30):
+        """Make a PUT request to the Shopify REST API and return the
+        parsed JSON body.  Rate-limit checked after the call."""
+        url = f"{self._get_api_base()}{endpoint}"
+        headers = self._get_shopify_headers()
+        response = requests.put(url, headers=headers, json=data, timeout=timeout)
+        self._check_rate_limit(response.headers)
+        response.raise_for_status()
+        return response.json() if response.text else {}
+
+    # -- inventory / shipping API wrappers ---------------------------------
+    def _set_shopify_inventory(self, inventory_item_id, location_id, available):
+        """Set the absolute inventory level for an inventory item at a
+        location.
+
+        Calls: ``POST /admin/api/{version}/inventory_levels/set.json``
+
+        :param inventory_item_id: Shopify InventoryItem ID (numeric or GID)
+        :param location_id: Shopify Location ID (numeric or GID)
+        :param available: absolute quantity to set
+        """
+        return self._shopify_api_post('/inventory_levels/set.json', {
+            'inventory_item_id': int(inventory_item_id),
+            'location_id': int(location_id),
+            'available': int(available),
+        })
+
+    def _set_shopify_requires_shipping(self, inventory_item_id, requires_shipping):
+        """Update the ``requires_shipping`` flag on a Shopify
+        InventoryItem.
+
+        Calls: ``PUT /admin/api/{version}/inventory_items/{id}.json``
+        """
+        return self._shopify_api_put(
+            f'/inventory_items/{inventory_item_id}.json',
+            {
+                'inventory_item': {
+                    'id': int(inventory_item_id),
+                    'requires_shipping': bool(requires_shipping),
+                },
+            },
+        )
+
+    # -----------------------------------------------------------------
     # Locking — simple advisory lock via DB row, auto-expiring
     # -----------------------------------------------------------------
     def _acquire_lock(self):
@@ -1021,18 +1088,48 @@ class ShopifySync(models.Model):
     def _create_shipping_line(self, sale_order, shopify_order):
         """Create a shipping line on the sale order.
 
-        Always creates a line when Shopify has shipping_lines, even when
-        the price is zero (free shipping).  The price from Shopify is
-        used as-is.
+        Handles two Shopify shipping patterns:
+
+        1. **Plain shipping** — ``shipping_lines[*].price`` is the final
+           shipping cost (free when 0, paid otherwise).
+        2. **Free-shipping discount** — Shopify often structures free
+           shipping as a *paid* shipping line PLUS a ``discount_applications``
+           entry with ``target_type == "shipping_line"`` that offsets the
+           cost entirely.  Example::
+
+               shipping_lines: [{"price": "80.00", "title": "cairo"}]
+               discount_applications: [
+                 {"target_type": "shipping_line", "type": "shipping",
+                  "value": "80.00", "title": "Free shipping"}
+               ]
+
+           The net shipping = 80.00 - 80.00 = 0.00  (= free).
+
+        The method always creates a line when Shopify has ``shipping_lines``,
+        even when the effective price is zero — this preserves the shipping
+        title / method for reporting.
         """
         shipping_lines = shopify_order.get('shipping_lines', [])
         if not shipping_lines:
             return None
 
         shipping = shipping_lines[0]
-        price = float(shipping.get('price', 0.0))
+        gross_price = float(shipping.get('price', 0.0))
         title = shipping.get('title', 'Shipping')
 
+        # -- collect shipping-targeted discounts ----------------------------
+        shipping_discount_total = 0.0
+        discount_applications = shopify_order.get('discount_applications', [])
+        for da in discount_applications:
+            if da.get('target_type') == 'shipping_line':
+                try:
+                    shipping_discount_total += float(da.get('value', 0.0))
+                except (ValueError, TypeError):
+                    pass
+
+        net_price = max(0.0, gross_price - shipping_discount_total)
+
+        # -- get-or-create the Shopify Shipping service product -------------
         Product = self.env['product.product']
         delivery = Product.search([('name', '=', 'Shopify Shipping')], limit=1)
         if not delivery:
@@ -1043,13 +1140,19 @@ class ShopifySync(models.Model):
                 'purchase_ok': False,
             })
 
-        label = f"Shipping: {title}" if price > 0.0 else f"Shipping: {title} (Free)"
+        # -- label ----------------------------------------------------------
+        if net_price == 0.0 and shipping_discount_total > 0.0:
+            label = f"Shipping: {title} (Free - discount applied)"
+        elif net_price == 0.0:
+            label = f"Shipping: {title} (Free)"
+        else:
+            label = f"Shipping: {title}"
 
         return self.env['sale.order.line'].create({
             'order_id': sale_order.id,
             'product_id': delivery.id,
             'product_uom_qty': 1,
-            'price_unit': price,
+            'price_unit': net_price,
             'name': label,
         })
 

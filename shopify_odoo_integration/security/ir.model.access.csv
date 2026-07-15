@@ -1,3 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_shopify_sync_user,shopify.sync.user,model_shopify_sync,base.group_system,1,1,1,1
 access_shopify_deleted_order_system,shopify.deleted.order.system,model_shopify_deleted_order,base.group_system,1,1,1,1
+access_shopify_product_binding_system,shopify.product.binding.system,model_shopify_product_binding,base.group_system,1,1,1,1
+access_shopify_product_binding_user,shopify.product.binding.user,model_shopify_product_binding,base.group_user,1,0,0,0
+access_shopify_stock_queue_system,shopify.stock.queue.system,model_shopify_stock_queue,base.group_system,1,1,1,1
+access_shopify_stock_queue_user,shopify.stock.queue.user,model_shopify_stock_queue,base.group_user,1,0,0,0

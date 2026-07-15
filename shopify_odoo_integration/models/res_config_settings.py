@@ -29,6 +29,31 @@ class ResConfigSettings(models.TransientModel):
              "Default: 2024-10",
     )
 
+    # -- Inventory sync settings ----------------------------------------
+    shopify_location_id = fields.Char(
+        string='Shopify Location ID',
+        config_parameter='shopify.location_id',
+        help="The Shopify fulfilment location ID where inventory levels "
+             "are synced.  Leave empty to use per-product location.  "
+             "Find it in Shopify Admin → Settings → Locations, or "
+             "via the API at /admin/api/{version}/locations.json.",
+    )
+    shopify_stock_sync_enabled = fields.Boolean(
+        string='Enable Stock Sync',
+        config_parameter='shopify.stock_sync_enabled',
+        default=False,
+        help="When enabled, Odoo stock-quantity changes are automatically "
+             "pushed to Shopify via the inventory_levels/set.json API.",
+    )
+    shopify_default_requires_shipping = fields.Boolean(
+        string='Default: Requires Shipping',
+        config_parameter='shopify.default_requires_shipping',
+        default=True,
+        help="Default value for the 'Requires Shipping' field on new "
+             "product bindings.  Synced to Shopify InventoryItem."
+             "requires_shipping.",
+    )
+
     def action_test_shopify_connection(self):
         """Test Shopify API connection from settings."""
         ICP = self.env['ir.config_parameter'].sudo()

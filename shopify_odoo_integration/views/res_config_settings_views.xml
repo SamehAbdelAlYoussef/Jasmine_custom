@@ -48,6 +48,33 @@
                             />
                         </div>
                     </block>
+
+                    <block title="Inventory Sync" name="shopify_inventory_settings">
+                        <setting
+                            id="shopify_stock_sync_enabled_setting"
+                            string="Enable Stock Sync"
+                            help="Automatically push Odoo stock changes to Shopify inventory levels."
+                            title="When enabled, any change to a product's available quantity triggers an update to Shopify via the inventory_levels/set.json API."
+                        >
+                            <field name="shopify_stock_sync_enabled"/>
+                        </setting>
+                        <setting
+                            id="shopify_location_id_setting"
+                            string="Shopify Location ID"
+                            help="The fulfilment location where inventory is synced (numeric ID)."
+                            title="Find this in Shopify Admin → Settings → Locations, or via GET /admin/api/{version}/locations.json"
+                        >
+                            <field name="shopify_location_id" placeholder="e.g. 655441491"/>
+                        </setting>
+                        <setting
+                            id="shopify_default_requires_shipping_setting"
+                            string="Default: Requires Shipping"
+                            help="Default value for new product bindings. When off, the product is treated as digital (no shipping charged)."
+                            title="Synced to Shopify InventoryItem.requires_shipping."
+                        >
+                            <field name="shopify_default_requires_shipping"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>
