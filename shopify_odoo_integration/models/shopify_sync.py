@@ -226,7 +226,7 @@ class ShopifySync(models.Model):
     def _set_shopify_inventory(self, inventory_item_id, location_id, available):
         """Set the absolute inventory level via Shopify REST API.
 
-        Always uses API version **2026-07** and the canonical
+        Uses the configured API version and the canonical
         ``.myshopify.com`` domain (custom domains may reject inventory
         write endpoints).
 
@@ -235,6 +235,7 @@ class ShopifySync(models.Model):
         :param available: absolute quantity to set
         """
         shop = self._get_myshopify_domain()
+        api_version = self._get_config('api_version') or '2024-10'
         token = self._get_config('access_token')
         headers = {
             'X-Shopify-Access-Token': token,
@@ -246,7 +247,7 @@ class ShopifySync(models.Model):
             'available': int(available),
         }
 
-        url = f"https://{shop}/admin/api/2026-07/inventory_levels/set.json"
+        url = f"https://{shop}/admin/api/{api_version}/inventory_levels/set.json"
         response = requests.post(url, headers=headers, json=payload, timeout=30)
         self._check_rate_limit(response.headers)
         if not response.ok:
@@ -263,7 +264,13 @@ class ShopifySync(models.Model):
                 available, error_body,
             )
             response.raise_for_status()
-        return response.json()
+        result = response.json()
+        _logger.info(
+            "Shopify inventory SET — inventory_item_id=%s, "
+            "location_id=%s, available=%s → response=%s",
+            inventory_item_id, location_id, available, result,
+        )
+        return result
 
     def _set_shopify_requires_shipping(self, inventory_item_id, requires_shipping):
         """Update the ``requires_shipping`` flag on a Shopify

@@ -94,19 +94,25 @@ class ShopifyProductBinding(models.Model):
         return helper
 
     def _discover_binding_for_product(self, product):
-        """Search Shopify for a variant whose SKU matches *product.default_code*.
+        """Search Shopify for a variant matching *product*.
 
-        Pages through ALL Shopify variants (following the ``Link`` header)
-        until the SKU is found or the catalogue is exhausted.  Creates a
-        ``shopify.product.binding`` on the first match and returns it.
+        Tries in order:
 
-        :param product: ``product.product`` record (must have ``default_code``)
+        1. **SKU match** — pages through all Shopify variants searching
+           for an exact ``sku`` match against ``product.default_code``.
+        2. **Name match** (fallback) — if SKU doesn't match, searches
+           Shopify products by ``product.name`` via the product-title
+           filter, then picks the first variant of the best match.
+
+        :param product: ``product.product`` record
         :return: ``shopify.product.binding`` or empty recordset
         """
         sku = product.default_code
-        if not sku:
+        product_name = (product.name or '').strip()
+
+        if not sku and not product_name:
             _logger.debug(
-                "shopify discover: product #%s has no SKU, skipping",
+                "shopify discover: product #%s has no SKU and no name, skipping",
                 product.id,
             )
             return self.env['shopify.product.binding']
@@ -116,17 +122,55 @@ class ShopifyProductBinding(models.Model):
         if existing:
             return existing
 
-        _logger.info(
-            "shopify discover: searching Shopify for SKU '%s'", sku,
-        )
         sync = self._get_sync_helper()
         base_url = sync._get_api_base()
         headers = sync._get_shopify_headers()
 
+        # ── Step 1: search by SKU (exact match on variant.sku) ─────────
+        if sku:
+            _logger.info(
+                "shopify discover: searching Shopify for SKU '%s'", sku,
+            )
+            binding = self._search_shopify_by_sku(
+                sku, product, sync, base_url, headers,
+            )
+            if binding:
+                return binding
+            _logger.info(
+                "shopify discover: SKU '%s' not found, trying name search...", sku,
+            )
+
+        # ── Step 2: search by product name (partial match) ─────────────
+        if product_name:
+            _logger.info(
+                "shopify discover: searching Shopify products for '%s'",
+                product_name,
+            )
+            binding = self._search_shopify_by_name(
+                product_name, sku, product, sync, base_url, headers,
+            )
+            if binding:
+                return binding
+
+        _logger.debug(
+            "shopify discover: product '%s' (SKU=%s) not found in Shopify",
+            product_name or '?', sku or '?',
+        )
+        return self.env['shopify.product.binding']
+
+    # ------------------------------------------------------------------
+    # Search helpers
+    # ------------------------------------------------------------------
+
+    def _search_shopify_by_sku(self, sku, product, sync, base_url, headers):
+        """Page through Shopify variants looking for an exact SKU match.
+
+        :returns: ``shopify.product.binding`` or ``None``
+        """
         page_url = (
             f"{base_url}/variants.json"
             f"?limit={CATALOG_PAGE_SIZE}"
-            "&fields=id,sku,inventory_item_id,product_id"
+            "&fields=id,sku,inventory_item_id,product_id,title"
         )
         pages = 0
 
@@ -144,7 +188,7 @@ class ShopifyProductBinding(models.Model):
                     "shopify discover: API error on page %d for "
                     "SKU '%s': %s", pages, sku, exc,
                 )
-                break
+                return None
 
             variants = data.get('variants', [])
             for v in variants:
@@ -163,7 +207,7 @@ class ShopifyProductBinding(models.Model):
                         ),
                     })
 
-            # -- follow Link header for next page ---------------------------
+            # follow Link header for next page
             page_url = None
             link_header = response.headers.get('Link', '')
             for link_part in link_header.split(','):
@@ -171,11 +215,110 @@ class ShopifyProductBinding(models.Model):
                     page_url = link_part.split(';')[0].strip(' <>')
                     break
 
-        _logger.debug(
-            "shopify discover: SKU '%s' not found in Shopify "
-            "(searched %d pages)", sku, pages,
+        return None
+
+    def _search_shopify_by_name(self, product_name, sku, product, sync,
+                                base_url, headers):
+        """Search Shopify products by title (partial match).
+
+        Shopify's ``/products.json?title=`` filter performs a
+        case-insensitive substring match.  We pick the first product
+        whose title contains the Odoo product name (or vice-versa),
+        then attach its first variant.
+
+        If *sku* is provided, we prefer the variant whose SKU matches
+        *sku* within the found product.
+
+        :returns: ``shopify.product.binding`` or ``None``
+        """
+        import urllib.parse
+
+        search_url = (
+            f"{base_url}/products.json"
+            f"?title={urllib.parse.quote(product_name)}"
+            "&limit=10"
+            "&fields=id,title,variants"
         )
-        return self.env['shopify.product.binding']
+
+        try:
+            response = requests.get(search_url, headers=headers, timeout=30)
+            sync._check_rate_limit(response.headers)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as exc:
+            _logger.error(
+                "shopify discover: product name search failed — %s", exc,
+            )
+            return None
+
+        products = data.get('products', [])
+        if not products:
+            _logger.debug(
+                "shopify discover: no Shopify product matches name '%s'",
+                product_name,
+            )
+            return None
+
+        # Score matches: prefer closer title match
+        odoo_name_lower = product_name.lower()
+        best_product = None
+        best_score = 99
+
+        for p in products:
+            shopify_title = (p.get('title') or '').lower()
+            # Simple scoring: shorter edit distance = better match
+            if shopify_title == odoo_name_lower:
+                score = 0  # exact match
+            elif odoo_name_lower in shopify_title:
+                score = 1  # Odoo name is substring of Shopify title
+            elif shopify_title in odoo_name_lower:
+                score = 2  # Shopify title is substring of Odoo name
+            else:
+                # Fuzzy — count matching words
+                odoo_words = set(odoo_name_lower.split())
+                shopify_words = set(shopify_title.split())
+                common = odoo_words & shopify_words
+                score = 10 - min(len(common), 9)
+
+            if score < best_score:
+                best_score = score
+                best_product = p
+                if score == 0:
+                    break
+
+        if not best_product:
+            return None
+
+        variants = best_product.get('variants', [])
+        if not variants:
+            _logger.debug(
+                "shopify discover: product '%s' has no variants",
+                best_product.get('title'),
+            )
+            return None
+
+        # Prefer variant with matching SKU, else take the first one
+        chosen = variants[0]
+        if sku:
+            for v in variants:
+                if v.get('sku') == sku:
+                    chosen = v
+                    break
+
+        _logger.info(
+            "shopify discover: name match → product='%s' (id=%s), "
+            "variant_id=%s, inventory_item_id=%s",
+            best_product.get('title'), best_product.get('id'),
+            chosen.get('id'), chosen.get('inventory_item_id'),
+        )
+        return self.create({
+            'product_id': product.id,
+            'shopify_product_id': str(best_product.get('id', '')),
+            'shopify_variant_id': str(chosen.get('id', '')),
+            'shopify_inventory_item_id': str(
+                chosen.get('inventory_item_id', ''),
+            ),
+        })
 
     # ------------------------------------------------------------------
     # Bulk catalog sync — pull ALL variants from Shopify
@@ -326,8 +469,15 @@ class ShopifyStockQueue(models.Model):
         Products without a SKU are silently skipped — we can't match
         them to Shopify without one.
 
-        When a pending record already exists the ``new_quantity`` is
-        updated in-place (deduplication).
+        Deduplication: when a record in ``pending`` or ``processing``
+        state already exists for the product, its ``new_quantity`` is
+        updated in-place.  This also covers the race condition where
+        the cron has picked up a record (state → ``processing``) while
+        a new stock move fires.
+
+        We invalidate ``qty_available`` before reading it to ensure the
+        computed field reflects the latest quant writes, even inside
+        long-running batch transactions (e.g. PO receipt).
         """
         products = self.env['product.product'].sudo().search([
             ('id', 'in', product_ids),
@@ -338,13 +488,20 @@ class ShopifyStockQueue(models.Model):
 
         Binding = self.env['shopify.product.binding'].sudo()
         for product in products:
-            qty = product.qty_available
+            # Force fresh computation — bypass ORM cache
+            product.invalidate_recordset(['qty_available'])
+            qty = product.sudo().qty_available
+
             existing = self.search([
                 ('product_id', '=', product.id),
-                ('state', '=', 'pending'),
+                ('state', 'in', ('pending', 'processing')),
             ], limit=1)
             if existing:
-                existing.write({'new_quantity': qty})
+                existing.write({
+                    'new_quantity': qty,
+                    'state': 'pending',  # reset if stuck in processing
+                    'error_message': False,
+                })
                 _logger.debug(
                     "shopify stock queue: updated pending for %s → %s",
                     product.default_code, qty,
@@ -512,9 +669,14 @@ class StockQuant(models.Model):
 
     def write(self, vals):
         """After writing to quants, enqueue affected products whose
-        quantity or reserved_quantity fields changed."""
+        ``quantity`` field changed.
+
+        We intentionally do NOT trigger on ``reserved_quantity`` changes
+        because that does not affect ``qty_available`` — it would send
+        the same value to Shopify, producing no visible change.
+        """
         res = super().write(vals)
-        if 'quantity' in vals or 'reserved_quantity' in vals:
+        if 'quantity' in vals:
             product_ids = list(set(self.mapped('product_id').ids))
             if product_ids:
                 self.env['shopify.stock.queue'].sudo()._enqueue_products(
