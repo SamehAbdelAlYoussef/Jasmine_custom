@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shopify ↔ Odoo Integration - Manager Solutions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Cairo', sans-serif;
+    direction: rtl;
+    background: #f5f7fa;
+    color: #2d3436;
+    line-height: 1.8;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    padding: 50px 60px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    border-radius: 12px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2em;
+    color: #1a1a2e;
+    margin-bottom: 5px;
+  }
+
+  h2 {
+    font-size: 1.5em;
+    color: #16213e;
+    border-bottom: 3px solid #0f3460;
+    padding-bottom: 8px;
+    margin: 35px 0 20px;
+  }
+
+  h3 {
+    font-size: 1.2em;
+    color: #0f3460;
+    margin: 20px 0 10px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: 25px 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 0.95em;
+  }
+
+  th {
+    background: #0f3460;
+    color: white;
+    padding: 12px 15px;
+    text-align: right;
+    font-weight: 600;
+  }
+
+  td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  tr:hover td {
+    background: #f8f9fa;
+  }
+
+  pre {
+    background: #1a1a2e;
+    color: #00ff88;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    overflow-x: auto;
+    margin: 15px 0;
+    direction: ltr;
+    text-align: left;
+    line-height: 1.6;
+  }
+
+  code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  pre code {
+    background: transparent;
+    padding: 0;
+  }
+
+  ul {
+    margin: 10px 25px;
+  }
+
+  li {
+    margin: 6px 0;
+  }
+
+  .company-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .company-header h1 {
+    font-size: 2.5em;
+    color: #0f3460;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #636e72;
+    font-size: 1.1em;
+    margin-bottom: 40px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 25px;
+    border-top: 2px solid #0f3460;
+    color: #636e72;
+  }
+
+  .footer h3 {
+    color: #0f3460;
+  }
+
+  .footer p {
+    font-style: italic;
+    margin-top: 10px;
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .container { box-shadow: none; padding: 20px; }
+    @page { margin: 1.5cm; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Shopify ↔ Odoo Integration Module</h1>
+<h2>وثيقة المواصفات التقنية والتجارية</h2>
+<hr>
+<div align="center">
+<h3>مقدم من</h3>
+<h1><strong>Manager Solutions</strong></h1>
+<hr>
+</div>
+<h2>١. نظرة عامة على النظام</h2>
+<h3>ما هو الموديول؟</h3>
+الموديول عبارة عن <strong>جسر تكامل ثنائي الاتجاه</strong> بين متجر Shopify الإلكتروني ونظام Odoo ERP. يقوم بمزامنة:
+<table>
+<thead>
+<tr>
+<th>من Shopify → إلى Odoo</th>
+<th>من Odoo → إلى Shopify</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><hr></td>
+<td><hr></td>
+</tr>
+<tr>
+<td>📦 الطلبات (Orders)</td>
+<td>📊 المخزون (Inventory)</td>
+</tr>
+<tr>
+<td>👤 العملاء (Customers)</td>
+<td>⚙️ إعدادات الشحن</td>
+</tr>
+<tr>
+<td>💰 المدفوعات (Payments)</td>
+<td></td>
+</tr>
+<tr>
+<td>🚚 الشحن (Shipping)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>٢. المميزات الرئيسية</h2>
+<h3>📦 أ. مزامنة الطلبات (Shopify → Odoo)</h3>
+<pre><code>متجر Shopify ← كل ٥ دقايق أو Webhook فوري → Odoo Sale Order
+</code></pre>
+<ul>
+<li><strong>تلقائي بالكامل</strong>: كل طلب جديد في Shopify يتحول إلى أمر بيع (Sale Order) في Odoo</li>
+<li><strong>Webhook فوري</strong>: الطلبات الجديدة والمعدلة والملغية تنعكس فوراً في Odoo</li>
+<li><strong>منع التكرار</strong>: النظام يضمن عدم تكرار أي طلب (حماية Idempotency)</li>
+<li><strong>العملاء تلقائياً</strong>: بيانات العميل (الاسم، العنوان، الهاتف) تنشئ أو تحدث تلقائياً</li>
+<li><strong>المنتجات تلقائياً</strong>: المنتجات غير الموجودة في Odoo تُعلم بعلامة "منتج مفقود"</li>
+<li><strong>المدفوعات</strong>: معاملات الدفع (Visa, COD, Paymob) تتزامن مع Odoo Payments</li>
+</ul>
+<h3>📊 ب. مزامنة المخزون (Odoo → Shopify)</h3>
+<pre><code>تغيير مخزون Odoo ← طابور ذكي ← كل دقيقتين ← Shopify Inventory
+</code></pre>
+<ul>
+<li><strong>لحظي في الخلفية</strong>: أي تغيير في المخزون (بيع، شراء، جرد) يسجل تلقائياً</li>
+<li><strong>تحديث دفعي</strong>: ٢٠٠ منتج كل دقيقتين للضمان عدم الضغط على API</li>
+<li><strong>ربط ذكي بالـ SKU</strong>: المنتجات تتطابق تلقائياً بين النظامين بالباركود</li>
+<li><strong>المنتج مش موجود في Shopify؟</strong> ← لا مشكلة، بيتخطاه تلقائياً</li>
+<li><strong>مراقبة كاملة</strong>: لوحة تحكم لمتابعة حالة المزامنة (نجاح/فشل/قيد الانتظار)</li>
+</ul>
+<h3>🚚 ج. معالجة ذكية للشحن</h3>
+<ul>
+<li><strong>الشحن المجاني</strong>: النظام يكتشف الخصومات على الشحن (مثلاً: شحن ٨٠ ج + خصم شحن مجاني ٨٠- = صافي ٠) ويطبقها بدقة</li>
+<li><strong>منتج خدمي</strong>: الشحن يضاف كمنتج خدمة (Service Product) لا يؤثر على المخزون</li>
+<li><strong>إعدادات الشحن</strong>: إمكانية تحديد المنتجات التي تتطلب شحن فعلي</li>
+</ul>
+<h3>🔄 د. مزامنة شاملة (Full Sync)</h3>
+<ul>
+<li>زر واحد يمسح <strong>كل منتجات Shopify</strong> ويطابقها مع Odoo</li>
+<li>ينشئ روابط الربط (Bindings) لكل المنتجات دفعة واحدة</li>
+<li>يضع كل المنتجات في طابور المزامنة للمعالجة في الخلفية</li>
+</ul>
+<hr>
+<h2>٣. كيف يعمل النظام؟</h2>
+<h3>الرسم البياني للتدفق</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│                        SHOPIFY STORE                                │
+│  • العملاء يطلبون من المتجر                                         │
+│  • المخزون يُعرض للعملاء                                            │
+│  • المدفوعات تتم عبر بوابات الدفع                                    │
+└────────────┬────────────────────────────────────┬───────────────────┘
+             │                                    │
+             │  أوامر، عملاء، مدفوعات             │  المخزون
+             │  (Shopify → Odoo)                  │  (Odoo → Shopify)
+             │                                    │
+             ▼                                    │
+┌─────────────────────────┐            ┌──────────┴──────────────────┐
+│   Webhook فوري          │            │   طابور المزامنة            │
+│   أو Cron كل ٥ دقائق    │            │   Stock Sync Queue          │
+└───────────┬─────────────┘            └──────────┬──────────────────┘
+            │                                     │
+            ▼                                     ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                          ODOO ERP                                   │
+│  • Sale Orders (أوامر البيع)                                        │
+│  • Customers (العملاء)                                              │
+│  • Payments (المدفوعات)                                             │
+│  • Inventory / Stock (المخزون)                                      │
+│  • Invoicing (الفواتير)                                             │
+└─────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>دورة حياة الطلب</h3>
+1. <strong>العميل يشتري</strong> من متجر Shopify
+2. <strong>Webhook</strong> يوصل الطلب لـ Odoo فوراً (أو Cron يجمعه)
+3. <strong>Odoo ينشئ</strong> Sale Order + Customer + Payment
+4. <strong>المخزون يتحجز</strong> في Odoo
+5. <strong>توصيل الطلب</strong> ← المخزون الفعلي ينقص
+6. <strong>الطابور يسجل</strong> التغيير
+7. <strong>Cron يرسل</strong> المخزون الجديد لـ Shopify
+<h3>دورة حياة المخزون</h3>
+1. <strong>استلام بضاعة</strong> في Odoo (Purchase Order)
+2. <strong>المخزون يزيد</strong> ← stock.quant يتغير
+3. <strong>الطابور يسجل</strong>: "المنتج X كميته الجديدة = Y"
+4. <strong>كل دقيقتين</strong>: الـ Cron يبعت القيم الجديدة لـ Shopify
+5. <strong>Shopify</strong>: يعرض المخزون المحدث للعملاء
+<hr>
+<h2>٤. الإعدادات المطلوبة</h2>
+<h3>الإعداد مرة واحدة فقط:</h3>
+<table>
+<thead>
+<tr>
+<th>الإعداد</th>
+<th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><hr></td>
+<td><hr></td>
+</tr>
+<tr>
+<td>🔗 Shopify Shop URL</td>
+<td>رابط المتجر (<code>mystore.myshopify.com</code>)</td>
+</tr>
+<tr>
+<td>🔑 Access Token</td>
+<td>رمز API من Shopify Admin</td>
+</tr>
+<tr>
+<td>📍 Location ID</td>
+<td>رقم موقع المخزون (يتم جلبه تلقائياً بزر "Fetch")</td>
+</tr>
+<tr>
+<td>✅ Enable Stock Sync</td>
+<td>تفعيل مزامنة المخزون</td>
+</tr>
+<tr>
+<td>⏱ Stock Sync Cron</td>
+<td>تفعيل الجدولة (كل دقيقتين)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>٥. لوحات المراقبة</h2>
+<table>
+<thead>
+<tr>
+<th>الشاشة</th>
+<th>الوصف</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><hr></td>
+<td><hr></td>
+</tr>
+<tr>
+<td><strong>Shopify Sync</strong></td>
+<td>متابعة حالة مزامنة الطلبات (قيد التشغيل، مكتمل، أخطاء)</td>
+</tr>
+<tr>
+<td><strong>Product Bindings</strong></td>
+<td>عرض كل المنتجات المربوطة بين Odoo و Shopify</td>
+</tr>
+<tr>
+<td><strong>Stock Sync Queue</strong></td>
+<td>متابعة طابور مزامنة المخزون (المنتظرة، قيد المعالجة، الأخطاء)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>٦. المزايا التقنية</h2>
+<ul>
+<li>✅ <strong>بدون اعتماديات خارجية</strong>: لا يحتاج مكتبات OCA أو خدمات خارجية</li>
+<li>✅ <strong>حماية من الأعطال</strong>: Auto-locking يمنع تشغيل مزامنتين في نفس الوقت</li>
+<li>✅ <strong>احترام حدود API</strong>: نظام ذكي لتجنب تجاوز حدود Shopify API</li>
+<li>✅ <strong>أمان كامل</strong>: لا يشارك بيانات مع أطراف خارجية</li>
+<li>✅ <strong>سجلات تفصيلية</strong>: Logging كامل لكل عملية لتتبع الأخطاء</li>
+<li>✅ <strong>متوافق مع Odoo 19</strong>: مبني بأحدث معايير Odoo</li>
+</ul>
+<hr>
+<h2>٧. متطلبات التشغيل</h2>
+<table>
+<thead>
+<tr>
+<th>المتطلب</th>
+<th>التفاصيل</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><hr></td>
+<td><hr></td>
+</tr>
+<tr>
+<td><strong>Odoo</strong></td>
+<td>الإصدار 19.0 Community أو Enterprise</td>
+</tr>
+<tr>
+<td><strong>Shopify</strong></td>
+<td>أي خطة Shopify (Basic وما فوق)</td>
+</tr>
+<tr>
+<td><strong>API Permissions</strong></td>
+<td><code>read_orders</code>, <code>read_products</code>, <code>read_customers</code>, <code>read_inventory</code>, <code>write_inventory</code>, <code>read_locations</code></td>
+</tr>
+<tr>
+<td><strong>Odoo Modules</strong></td>
+<td><code>sale</code>, <code>stock</code>, <code>account</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<div align="center">
+<h3><strong>Manager Solutions</strong></h3>
+*"نبني حلولاً تقنية تدفع أعمالك للأمام"*
+</div>
+
+</div>
+</body>
+</html>

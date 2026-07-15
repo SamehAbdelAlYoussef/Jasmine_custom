@@ -20,7 +20,7 @@ _logger = logging.getLogger(__name__)
 
 # ── tunables ────────────────────────────────────────────────────────────
 CATALOG_PAGE_SIZE = 250       # variants per page when fetching from Shopify
-STOCK_QUEUE_BATCH = 50        # max queue records per cron invocation
+STOCK_QUEUE_BATCH = 200       # max queue records per cron invocation
 # ─────────────────────────────────────────────────────────────────────────
 
 
@@ -478,6 +478,10 @@ class ShopifyStockQueue(models.Model):
                     'error_message': str(exc),
                 })
 
+        # Delete done records (keep errors for review)
+        done_records = pending.filtered(lambda r: r.state == 'done')
+        if done_records:
+            done_records.unlink()
         _logger.info("shopify stock sync: batch complete")
 
 

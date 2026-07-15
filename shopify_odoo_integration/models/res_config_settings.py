@@ -55,7 +55,7 @@ class ResConfigSettings(models.TransientModel):
     )
 
     def action_test_shopify_connection(self):
-        """Test Shopify API connection — REST + GraphQL."""
+        """Test Shopify API connection from settings."""
         ICP = self.env['ir.config_parameter'].sudo()
         shop = self.shopify_shop_url or ICP.get_param('shopify.shop_url')
         token = self.shopify_access_token or ICP.get_param('shopify.access_token')
@@ -85,220 +85,95 @@ class ResConfigSettings(models.TransientModel):
         try:
             r = requests.get(f"{base}/shop.json", headers=headers, timeout=15)
             r.raise_for_status()
-            msgs.append(f"✓ REST API: {r.json().get('shop', {}).get('name', shop)}")
+            msgs.append(f"✓ REST: {r.json().get('shop', {}).get('name', shop)}")
         except requests.exceptions.RequestException as e:
-            msgs.append(f"✗ REST API: {e}")
+            msgs.append(f"✗ REST: {e}")
 
-        # 2. GraphQL simple query
-        try:
-            r = requests.post(
-                f"{base}/graphql.json",
-                headers=headers,
-                json={'query': '{ shop { name } }'},
-                timeout=15,
-            )
-            r.raise_for_status()
-            data = r.json()
-            if 'errors' in data:
-                msgs.append(f"✗ GraphQL: {data['errors'][0]['message']}")
-            else:
-                name = data.get('data', {}).get('shop', {}).get('name', '?')
-                msgs.append(f"✓ GraphQL: {name}")
-        except requests.exceptions.RequestException as e:
-            msgs.append(f"✗ GraphQL: {e}")
-
-        # 3. Check inventory scope via REST locations
+        # 2. Locations
         try:
             r = requests.get(f"{base}/locations.json", headers=headers, timeout=15)
             r.raise_for_status()
             locs = r.json().get('locations', [])
             active = [l for l in locs if l.get('active')]
             msgs.append(f"✓ Locations: {len(active)} active")
+        except requests.exceptions.RequestException as e:
+            msgs.append(f"✗ Locations: {e}")
 
-            # 4. Test inventory REST endpoints (if we have a location)
-            if active:
-                loc_id = active[0]['id']
-                # Get first variant to test with
+        # 3. Inventory read + connect test
+        if active:
+            loc_id = active[0]['id']
+            msgs.append(f"Using location_id={loc_id}")
+
+            try:
                 rv = requests.get(
-                    f"{base}/variants.json?limit=1&fields=id,inventory_item_id",
+                    f"{base}/variants.json?limit=3&fields=id,inventory_item_id,sku",
                     headers=headers, timeout=15,
                 )
                 rv.raise_for_status()
                 variants = rv.json().get('variants', [])
-                if variants:
-                    inv_item_id = variants[0].get('inventory_item_id')
-                    # Try inventory_levels.json GET
+                # Pick first variant with a real SKU
+                test_var = None
+                for v in variants:
+                    if v.get('sku') and v.get('sku') != '0':
+                        test_var = v
+                        break
+                if not test_var:
+                    test_var = variants[0] if variants else None
+
+                if test_var:
+                    inv_id = test_var.get('inventory_item_id')
+                    variant_id = test_var.get('id')
+                    sku = test_var.get('sku', '?')
+
+                    msgs.append(f"Test: SKU={sku}, inv_item_id={inv_id}, variant_id={variant_id}")
+
                     ri = requests.get(
                         f"{base}/inventory_levels.json"
-                        f"?inventory_item_ids={inv_item_id}"
+                        f"?inventory_item_ids={inv_id}"
                         f"&location_ids={loc_id}",
                         headers=headers, timeout=15,
                     )
                     if ri.status_code == 200:
                         lvls = ri.json().get('inventory_levels', [])
-                        cur_qty = lvls[0].get('available', 0) if lvls else 0
-                        msgs.append(f"✓ Inventory read: qty={cur_qty}")
-
-                        # Test set.json
-                        try:
-                            rs = requests.post(
-                                f"{base}/inventory_levels/set.json",
-                                headers=headers,
-                                json={
-                                    'inventory_item_id': inv_item_id,
-                                    'location_id': loc_id,
-                                    'available': cur_qty,
-                                },
-                                timeout=15,
-                            )
-                            if rs.status_code == 200:
-                                msgs.append("✓ Inventory SET works")
-                            else:
-                                msgs.append(f"✗ Inventory SET: HTTP {rs.status_code}")
-                        except Exception as ex:
-                            msgs.append(f"✗ Inventory SET: {ex}")
-
-                        # Test adjust.json
-                        try:
-                            ra = requests.post(
-                                f"{base}/inventory_levels/adjust.json",
-                                headers=headers,
-                                json={
-                                    'inventory_item_id': inv_item_id,
-                                    'location_id': loc_id,
-                                    'available_adjustment': 0,
-                                },
-                                timeout=15,
-                            )
-                            if ra.status_code == 200:
-                                msgs.append("✓ Inventory ADJUST works")
-                            else:
-                                msgs.append(f"✗ Inventory ADJUST: HTTP {ra.status_code}")
-                        except Exception as ex:
-                            msgs.append(f"✗ Inventory ADJUST: {ex}")
-
-                        # Test POST to base /inventory_levels.json (no action)
-                        try:
-                            rb = requests.post(
-                                f"{base}/inventory_levels.json",
-                                headers=headers,
-                                json={
-                                    'inventory_item_id': inv_item_id,
-                                    'location_id': loc_id,
-                                    'available': cur_qty,
-                                },
-                                timeout=15,
-                            )
-                            if rb.status_code == 200:
-                                msgs.append("✓ Inventory POST base works")
-                            else:
-                                msgs.append(f"✗ Inventory POST base: HTTP {rb.status_code}")
-                        except Exception as ex:
-                            msgs.append(f"✗ Inventory POST base: {ex}")
-
-                        # Test variant PUT (only inventory_management, no quantity)
-                        try:
-                            variant_id = variants[0].get('id')
-                            rv2 = requests.put(
+                        if lvls:
+                            cur_qty = lvls[0].get('available', 0)
+                            msgs.append(f"✓ Connected qty={cur_qty}")
+                            rv2 = requests.get(
                                 f"{base}/variants/{variant_id}.json",
-                                headers=headers,
-                                json={
-                                    'variant': {
-                                        'id': variant_id,
-                                        'inventory_management': 'shopify',
-                                    },
-                                },
-                                timeout=15,
+                                headers=headers, timeout=15,
                             )
                             if rv2.status_code == 200:
-                                msgs.append("✓ Variant PUT (no qty): OK")
-                            else:
-                                body = rv2.text[:100]
-                                msgs.append(f"✗ Variant PUT: HTTP {rv2.status_code}")
-                        except Exception as ex:
-                            msgs.append(f"✗ Variant PUT: {ex}")
-
-                        # Test if API version 2025-01 has set.json
-                        try:
-                            base2 = f"https://{shop}/admin/api/2025-01"
-                            rs2 = requests.post(
-                                f"{base2}/inventory_levels/set.json",
-                                headers=headers,
-                                json={
-                                    'inventory_item_id': inv_item_id,
-                                    'location_id': loc_id,
-                                    'available': cur_qty,
-                                },
-                                timeout=15,
-                            )
-                            if rs2.status_code == 200:
-                                msgs.append("✓ SET works on 2025-01")
-                            else:
-                                msgs.append(f"✗ SET on 2025-01: HTTP {rs2.status_code}")
-                        except Exception as ex:
-                            msgs.append(f"✗ SET on 2025-01: {ex}")
-
-                        # Test connect.json
-                        try:
-                            rc = requests.post(
-                                f"{base}/inventory_levels/connect.json",
-                                headers=headers,
-                                json={
-                                    'location_id': loc_id,
-                                    'inventory_item_id': inv_item_id,
-                                },
-                                timeout=15,
-                            )
-                            if rc.status_code in (200, 201):
-                                msgs.append("✓ Inventory CONNECT works")
-                            else:
-                                msgs.append(f"✗ CONNECT: HTTP {rc.status_code}")
-                        except Exception as ex:
-                            msgs.append(f"✗ CONNECT: {ex}")
-
-                        # Test POST base with wrapped body
-                        try:
-                            rw = requests.post(
-                                f"{base}/inventory_levels.json",
-                                headers=headers,
-                                json={
-                                    'inventory_level': {
-                                        'inventory_item_id': inv_item_id,
-                                        'location_id': loc_id,
-                                        'available': cur_qty,
-                                    },
-                                },
-                                timeout=15,
-                            )
-                            if rw.status_code == 200:
-                                msgs.append("✓ POST base WRAPPED works")
-                            else:
-                                bod = rw.text[:150]
-                                msgs.append(f"✗ POST wrapped: HTTP {rw.status_code} — {bod}")
-                        except Exception as ex:
-                            msgs.append(f"✗ POST wrapped: {ex}")
+                                vd = rv2.json().get('variant', {})
+                                msgs.append(f"inv_mgmt={vd.get('inventory_management')}")
+                            msgs.append("──────────────────────────────")
+                            msgs.append("Run this curl in terminal:")
+                            msgs.append(f"curl -X POST \"{base}/inventory_levels/set.json\" \\")
+                            msgs.append(f"  -H \"X-Shopify-Access-Token: {token[:15]}...\" \\")
+                            msgs.append(f"  -H \"Content-Type: application/json\" \\")
+                            msgs.append(f"  -d '{{\"location_id\":{loc_id},\"inventory_item_id\":{inv_id},\"available\":{cur_qty + 1}}}'")
+                            msgs.append("Replace '...' with your FULL token")
+                            msgs.append("──────────────────────────────")
+                        else:
+                            msgs.append("✗ NOT connected to this location!")
                     else:
-                        msgs.append(f"✗ Inventory read: HTTP {ri.status_code}")
-        except requests.exceptions.RequestException as e:
-            msgs.append(f"✗ Locations: {e}")
+                        msgs.append(f"✗ Inventory GET: HTTP {ri.status_code}")
+            except Exception as ex:
+                msgs.append(f"Inventory test error: {ex}")
 
         result = "\n".join(msgs)
-        all_ok = all(m.startswith('✓') for m in msgs)
-
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': 'Connection Test',
+                'title': 'Shopify Connection Test',
                 'message': result,
-                'type': 'success' if all_ok else 'warning',
+                'type': 'success',
                 'sticky': True,
             }
         }
 
     def action_fetch_shopify_locations(self):
-        """Fetch locations from Shopify API and show them in a notification.
-        The user can copy the correct ID into the Location ID field."""
+        """Fetch locations from Shopify API and show them in a notification."""
         ICP = self.env['ir.config_parameter'].sudo()
         shop = self.shopify_shop_url or ICP.get_param('shopify.shop_url')
         token = self.shopify_access_token or ICP.get_param('shopify.access_token')
@@ -329,7 +204,6 @@ class ResConfigSettings(models.TransientModel):
             active = [l for l in locations if l.get('active')]
 
             if len(active) == 1:
-                # Auto-fill when there's only one location
                 loc = active[0]
                 loc_id = str(loc.get('id', ''))
                 ICP.set_param('shopify.location_id', loc_id)
@@ -380,12 +254,10 @@ class ResConfigSettings(models.TransientModel):
 
     def action_full_inventory_sync(self):
         """One-click full sync: fetch ALL Shopify variants, match with Odoo
-        by SKU, create bindings, overwrite Shopify inventory to match Odoo
-        stock, and ensure requires_shipping is set on every inventory item.
+        by SKU, create bindings, then enqueue all bound products for
+        background inventory sync via the existing cron job.
 
-        This is a blocking operation — it pages through every variant in
-        Shopify and makes one API call per matched product.  For stores
-        with thousands of products it may take several minutes.
+        Returns immediately — the cron processes the queue every 5 minutes.
         """
         ICP = self.env['ir.config_parameter'].sudo()
         shop = self.shopify_shop_url or ICP.get_param('shopify.shop_url')
@@ -409,23 +281,25 @@ class ResConfigSettings(models.TransientModel):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Sync Failed',
-                    'message': 'Set Shopify Location ID first. Use Fetch Locations button.',
+                    'message': 'Set Shopify Location ID first.',
                     'type': 'danger',
                     'sticky': True,
                 }
             }
 
+        # Fetch Shopify domain from config
+        myshopify = ICP.get_param('shopify.myshopify_domain', shop)
+
         api_version = self.shopify_api_version or ICP.get_param('shopify.api_version') or '2024-10'
-        base_url = f"https://{shop}/admin/api/{api_version}"
+        base_url = f"https://{myshopify}/admin/api/{api_version}"
         headers = {
             'X-Shopify-Access-Token': token,
             'Content-Type': 'application/json',
         }
 
-        # -- Step 1: fetch ALL Shopify variants ----------------------------
+        # Step 1: Fetch ALL Shopify variants & create bindings
         page_url = f"{base_url}/variants.json?limit=250&fields=id,sku,inventory_item_id,product_id"
         matched = 0
-        synced = 0
         errors = 0
 
         Binding = self.env['shopify.product.binding'].sudo()
@@ -434,7 +308,6 @@ class ResConfigSettings(models.TransientModel):
         while page_url:
             try:
                 resp = requests.get(page_url, headers=headers, timeout=30)
-                # rate-limit check
                 limit_hdr = resp.headers.get('X-Shopify-Shop-Api-Call-Limit', '')
                 if limit_hdr and '/' in limit_hdr:
                     used_str, limit_str = limit_hdr.split('/')
@@ -445,7 +318,7 @@ class ResConfigSettings(models.TransientModel):
                 resp.raise_for_status()
                 data = resp.json()
             except requests.exceptions.RequestException as e:
-                _logger.error("Full inventory sync: API error: %s", e)
+                _logger.error("Catalog sync: API error: %s", e)
                 errors += 1
                 break
 
@@ -462,47 +335,23 @@ class ResConfigSettings(models.TransientModel):
                     continue
 
                 matched += 1
-                variant_id = str(v.get('id', ''))
-                inventory_item_id = str(v.get('inventory_item_id', ''))
-
-                # Create or update binding
                 binding = Binding.search(
                     [('product_id', '=', odoo_product.id)], limit=1,
                 )
                 binding_vals = {
                     'product_id': odoo_product.id,
                     'shopify_product_id': str(v.get('product_id', '')),
-                    'shopify_variant_id': variant_id,
-                    'shopify_inventory_item_id': inventory_item_id,
+                    'shopify_variant_id': str(v.get('id', '')),
+                    'shopify_inventory_item_id': str(v.get('inventory_item_id', '')),
                     'shopify_location_id': location_id,
                     'sync_inventory': True,
                 }
                 if binding:
                     binding.write(binding_vals)
                 else:
-                    binding = Binding.create(binding_vals)
+                    Binding.create(binding_vals)
 
-                # -- Overwrite Shopify inventory → Odoo qty (GraphQL) -------
-                qty = int(odoo_product.qty_available)
-                try:
-                    Sync = self.env['shopify.sync'].sudo()
-                    sync_rec = Sync.search([], limit=1) or Sync.create({'name': 'API Helper'})
-                    sync_rec._set_shopify_inventory(
-                        inventory_item_id, location_id, qty,
-                    )
-
-                    binding.write({
-                        'last_synced_qty': qty,
-                        'last_sync_date': fields.Datetime.now(),
-                    })
-                    synced += 1
-                except Exception as e:
-                    _logger.error(
-                        "Full sync: inventory set failed for %s: %s", sku, e,
-                    )
-                    errors += 1
-
-            # -- next page -------------------------------------------------
+            # Next page
             page_url = None
             link_header = resp.headers.get('Link', '')
             for part in link_header.split(','):
@@ -510,20 +359,27 @@ class ResConfigSettings(models.TransientModel):
                     page_url = part.split(';')[0].strip(' <>')
                     break
 
-        _logger.info(
-            "Full inventory sync done: %d matched, %d synced, %d errors",
-            matched, synced, errors,
-        )
+        _logger.info("Catalog sync: %d bindings created/updated, %d errors", matched, errors)
+
+        # Step 2: Enqueue all bound products for background stock sync
+        if matched > 0:
+            bound_products = Binding.search([('sync_inventory', '=', True)]).mapped('product_id').ids
+            if bound_products:
+                self.env['shopify.stock.queue'].sudo()._enqueue_products(bound_products)
+                _logger.info("Enqueued %d products for background stock sync", len(bound_products))
 
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': 'Full Inventory Sync Complete',
+                'title': 'Catalog Sync Complete',
                 'message': (
-                    f"Matched: {matched} products\n"
-                    f"Synced to Shopify: {synced}\n"
-                    f"Errors: {errors}"
+                    f"Bindings created: {matched} products\n"
+                    f"Stock sync queued: {matched} products\n"
+                    f"Errors: {errors}\n\n"
+                    "Inventory will sync via the background cron job "
+                    "(every 5 minutes). Activate 'Shopify: Sync Stock Queue' "
+                    "cron if not already active."
                 ),
                 'type': 'success' if errors == 0 else 'warning',
                 'sticky': True,
@@ -531,12 +387,7 @@ class ResConfigSettings(models.TransientModel):
         }
 
     def action_sync_orders_from_settings(self):
-        """Save settings, mark sync as pending, return immediately.
-
-        The cron picks up 'fetching' syncs and processes them in the
-        background using batched, independent database transactions.
-        No queue_job dependency — works with native Odoo cron only.
-        """
+        """Save settings, mark sync as pending, return immediately."""
         ICP = self.env['ir.config_parameter'].sudo()
         ICP.set_param('shopify.shop_url', self.shopify_shop_url or '')
         ICP.set_param('shopify.access_token', self.shopify_access_token or '')
@@ -558,7 +409,6 @@ class ResConfigSettings(models.TransientModel):
         if not sync_record:
             sync_record = Sync.create({'name': 'Shopify Sync'})
 
-        # If already fetching, just report progress
         if sync_record.sync_state == 'fetching':
             return {
                 'type': 'ir.actions.client',
@@ -574,7 +424,6 @@ class ResConfigSettings(models.TransientModel):
                 }
             }
 
-        # Mark as fetching — the cron will pick it up within 5 minutes
         sync_record.write({
             'last_sync_id': None,
             'sync_state': 'fetching',

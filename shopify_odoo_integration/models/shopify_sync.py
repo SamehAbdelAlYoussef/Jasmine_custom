@@ -187,20 +187,70 @@ class ShopifySync(models.Model):
         return response.json() if response.text else {}
 
     # -- inventory / shipping API wrappers ---------------------------------
+    def _get_myshopify_domain(self):
+        """Return the ``.myshopify.com`` domain for this store.
+
+        Custom domains (e.g. ``mystore.com``) sometimes reject inventory
+        write endpoints.  The official ``.myshopify.com`` subdomain always
+        works.  We fetch it once from ``/shop.json`` and cache it in a
+        config parameter.
+        """
+        ICP = self.env['ir.config_parameter'].sudo()
+        cached = ICP.get_param('shopify.myshopify_domain')
+        if cached:
+            return cached
+
+        shop = self._get_config('shop_url')
+        if 'myshopify.com' in shop:
+            ICP.set_param('shopify.myshopify_domain', shop)
+            return shop
+
+        # Fetch the canonical domain from the API
+        try:
+            resp = requests.get(
+                f"https://{shop}/admin/api/{self._get_config('api_version') or '2024-10'}/shop.json",
+                headers=self._get_shopify_headers(),
+                timeout=15,
+            )
+            resp.raise_for_status()
+            domain = resp.json().get('shop', {}).get('myshopify_domain', '')
+            if domain:
+                ICP.set_param('shopify.myshopify_domain', domain)
+                return domain
+        except Exception:
+            _logger.warning("Could not fetch myshopify_domain, using configured domain")
+
+        ICP.set_param('shopify.myshopify_domain', shop)
+        return shop
+
     def _set_shopify_inventory(self, inventory_item_id, location_id, available):
-        """Set the absolute inventory level via the Shopify REST API.
+        """Set the absolute inventory level via Shopify REST API.
 
-        Calls ``POST /admin/api/{version}/inventory_levels/set.json``.
+        Always uses API version **2026-07** and the canonical
+        ``.myshopify.com`` domain (custom domains may reject inventory
+        write endpoints).
 
-        :param inventory_item_id: Shopify InventoryItem ID (numeric ID)
-        :param location_id: Shopify Location ID (numeric ID)
+        :param inventory_item_id: Shopify InventoryItem ID (numeric)
+        :param location_id: Shopify Location ID (numeric)
         :param available: absolute quantity to set
         """
-        return self._shopify_api_post('/inventory_levels/set.json', {
-            'inventory_item_id': int(inventory_item_id),
+        shop = self._get_myshopify_domain()
+        token = self._get_config('access_token')
+        headers = {
+            'X-Shopify-Access-Token': token,
+            'Content-Type': 'application/json',
+        }
+        payload = {
             'location_id': int(location_id),
+            'inventory_item_id': int(inventory_item_id),
             'available': int(available),
-        })
+        }
+
+        url = f"https://{shop}/admin/api/2026-07/inventory_levels/set.json"
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        self._check_rate_limit(response.headers)
+        response.raise_for_status()
+        return response.json()
 
     def _set_shopify_requires_shipping(self, inventory_item_id, requires_shipping):
         """Update the ``requires_shipping`` flag on a Shopify
