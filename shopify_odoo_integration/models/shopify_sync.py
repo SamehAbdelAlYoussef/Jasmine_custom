@@ -249,7 +249,20 @@ class ShopifySync(models.Model):
         url = f"https://{shop}/admin/api/2026-07/inventory_levels/set.json"
         response = requests.post(url, headers=headers, json=payload, timeout=30)
         self._check_rate_limit(response.headers)
-        response.raise_for_status()
+        if not response.ok:
+            # Capture Shopify's error message from the response body
+            try:
+                error_body = response.json()
+            except Exception:
+                error_body = response.text[:500]
+            _logger.error(
+                "Shopify inventory set FAILED — HTTP %s for "
+                "inventory_item_id=%s, location_id=%s, available=%s\n"
+                "Response: %s",
+                response.status_code, inventory_item_id, location_id,
+                available, error_body,
+            )
+            response.raise_for_status()
         return response.json()
 
     def _set_shopify_requires_shipping(self, inventory_item_id, requires_shipping):
@@ -1181,17 +1194,52 @@ class ShopifySync(models.Model):
                 except (ValueError, TypeError):
                     pass
 
+        # Log every discount_application in full detail for debugging
+        for i, da in enumerate(discount_applications):
+            _logger.info(
+                "Shopify shipping: order #%s — discount_app[%d] = %s",
+                shopify_order.get('order_number', '?'), i, da,
+            )
         _logger.info(
-            "Shopify shipping: order #%s — gross=%.2f, discount_total=%.2f, "
-            "raw shipping_lines=%s, raw discount_applications=%s",
+            "Shopify shipping: order #%s — gross=%.2f, "
+            "shipping_discount_total=%.2f, net=%.2f, discount_pct=%.2f%%\n"
+            "  shipping_lines=%s\n"
+            "  ALL discount_applications=%s\n"
+            "  total_price=%s, total_discounts=%s, current_total_price=%s",
             shopify_order.get('order_number', '?'),
             gross_price,
             shipping_discount_total,
+            max(0.0, gross_price - shipping_discount_total),
+            (shipping_discount_total / gross_price * 100.0) if gross_price > 0 else 0.0,
             shipping_lines,
             discount_applications,
+            shopify_order.get('total_price'),
+            shopify_order.get('total_discounts'),
+            shopify_order.get('current_total_price'),
         )
 
         net_price = max(0.0, gross_price - shipping_discount_total)
+
+        # Fallback: if the discount_applications value doesn't match the
+        # order's total_discounts, and all discounts target shipping,
+        # trust total_discounts from the order header.
+        order_total_discounts = float(shopify_order.get('total_discounts', 0) or 0)
+        if order_total_discounts > shipping_discount_total:
+            all_shipping = (
+                not discount_applications
+                or all(
+                    da.get('target_type') == 'shipping_line'
+                    for da in discount_applications
+                )
+            )
+            if all_shipping:
+                _logger.info(
+                    "Shopify shipping: correcting discount_total from "
+                    "%.2f → %.2f (order total_discounts)",
+                    shipping_discount_total, order_total_discounts,
+                )
+                shipping_discount_total = order_total_discounts
+                net_price = max(0.0, gross_price - shipping_discount_total)
 
         # Calculate line discount percentage (Odoo discount field is 0–100)
         discount_pct = 0.0
