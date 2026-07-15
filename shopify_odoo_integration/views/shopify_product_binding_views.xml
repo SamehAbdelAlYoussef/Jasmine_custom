@@ -8,51 +8,13 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
-            <page name="sales" position="after">
+            <xpath expr="//page[last()]" position="after">
                 <page string="Shopify" name="shopify_binding">
                     <group string="Shopify Binding" name="shopify_group">
-                        <field
-                            name="shopify_binding_ids"
-                            mode="tree,form"
-                            nolabel="1"
-                            context="{'default_product_id': active_id}"
-                        >
-                            <tree editable="bottom">
-                                <field name="shopify_product_id"/>
-                                <field name="shopify_variant_id"/>
-                                <field name="shopify_inventory_item_id"/>
-                                <field name="shopify_location_id"
-                                       optional="hide"/>
-                                <field name="requires_shipping"/>
-                                <field name="sync_inventory"/>
-                                <field name="last_synced_qty"
-                                       readonly="1" optional="show"/>
-                                <field name="last_sync_date"
-                                       readonly="1" optional="hide"/>
-                            </tree>
-                            <form>
-                                <group>
-                                    <group>
-                                        <field name="product_id"/>
-                                        <field name="shopify_product_id"/>
-                                        <field name="shopify_variant_id"/>
-                                        <field name="shopify_inventory_item_id"/>
-                                    </group>
-                                    <group>
-                                        <field name="shopify_location_id"/>
-                                        <field name="requires_shipping"/>
-                                        <field name="sync_inventory"/>
-                                    </group>
-                                </group>
-                                <group string="Sync Status">
-                                    <field name="last_synced_qty"/>
-                                    <field name="last_sync_date"/>
-                                </group>
-                            </form>
-                        </field>
+                        <field name="shopify_binding_ids" nolabel="1"/>
                     </group>
                 </page>
-            </page>
+            </xpath>
         </field>
     </record>
 
@@ -63,7 +25,7 @@
         <field name="name">shopify.product.binding.tree</field>
         <field name="model">shopify.product.binding</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="product_id"/>
                 <field name="shopify_variant_id"/>
                 <field name="shopify_inventory_item_id"/>
@@ -71,7 +33,7 @@
                 <field name="sync_inventory"/>
                 <field name="last_synced_qty"/>
                 <field name="last_sync_date"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -104,7 +66,7 @@
     <record id="action_shopify_product_binding" model="ir.actions.act_window">
         <field name="name">Shopify Product Bindings</field>
         <field name="res_model">shopify.product.binding</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <menuitem
@@ -122,13 +84,14 @@
         <field name="name">shopify.stock.queue.tree</field>
         <field name="model">shopify.stock.queue</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="create_date"/>
+                <field name="product_id"/>
                 <field name="binding_id"/>
                 <field name="new_quantity"/>
                 <field name="state"/>
                 <field name="error_message"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -140,6 +103,7 @@
                 <sheet>
                     <group>
                         <group>
+                            <field name="product_id"/>
                             <field name="binding_id"/>
                             <field name="new_quantity"/>
                         </group>
@@ -160,7 +124,7 @@
     <record id="action_shopify_stock_queue" model="ir.actions.act_window">
         <field name="name">Shopify Stock Sync Queue</field>
         <field name="res_model">shopify.stock.queue</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <menuitem

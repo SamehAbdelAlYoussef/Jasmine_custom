@@ -188,13 +188,12 @@ class ShopifySync(models.Model):
 
     # -- inventory / shipping API wrappers ---------------------------------
     def _set_shopify_inventory(self, inventory_item_id, location_id, available):
-        """Set the absolute inventory level for an inventory item at a
-        location.
+        """Set the absolute inventory level via the Shopify REST API.
 
-        Calls: ``POST /admin/api/{version}/inventory_levels/set.json``
+        Calls ``POST /admin/api/{version}/inventory_levels/set.json``.
 
-        :param inventory_item_id: Shopify InventoryItem ID (numeric or GID)
-        :param location_id: Shopify Location ID (numeric or GID)
+        :param inventory_item_id: Shopify InventoryItem ID (numeric ID)
+        :param location_id: Shopify Location ID (numeric ID)
         :param available: absolute quantity to set
         """
         return self._shopify_api_post('/inventory_levels/set.json', {

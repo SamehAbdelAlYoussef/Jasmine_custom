@@ -62,10 +62,29 @@
                             id="shopify_location_id_setting"
                             string="Shopify Location ID"
                             help="The fulfilment location where inventory is synced (numeric ID)."
-                            title="Find this in Shopify Admin → Settings → Locations, or via GET /admin/api/{version}/locations.json"
+                            title="Find this in Shopify Admin → Settings → Locations, or use the Fetch button below."
                         >
                             <field name="shopify_location_id" placeholder="e.g. 655441491"/>
                         </setting>
+                        <div class="mb-3">
+                            <button
+                                name="action_fetch_shopify_locations"
+                                string="Fetch Locations from Shopify"
+                                type="object"
+                                class="btn btn-secondary me-2"
+                                help="Uses your API credentials to list all active Shopify locations and their IDs."
+                            />
+                        </div>
+                        <div class="mt-3 text-center">
+                            <button
+                                name="action_full_inventory_sync"
+                                string="Sync All Inventory to Shopify"
+                                type="object"
+                                class="btn btn-primary"
+                                confirm="This will fetch ALL Shopify products and overwrite their inventory to match Odoo stock. This may take several minutes for large catalogs. Continue?"
+                                help="Matches every Shopify variant by SKU, creates bindings, and sets Shopify inventory = Odoo qty_available. One-time bulk operation."
+                            />
+                        </div>
                         <setting
                             id="shopify_default_requires_shipping_setting"
                             string="Default: Requires Shipping"
