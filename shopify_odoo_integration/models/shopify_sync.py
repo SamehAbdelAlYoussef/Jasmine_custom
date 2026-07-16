@@ -1370,14 +1370,14 @@ class ShopifySync(models.Model):
 
             # ── Handle by status ────────────────────────────────────
             if status == 'success':
-                # Create payment directly as in_progress — the accountant
-                # must manually post/reconcile to move it to paid.
+                # Create payment as draft, then set to in_progress —
+                # the accountant must manually post/reconcile to paid.
                 try:
                     vals = self._prepare_payment_vals(
                         txn, sale_order, sale_order.partner_id, payment_type,
                     )
-                    vals['state'] = 'in_progress'
                     payment = Payment.create(vals)
+                    payment.sudo().write({'state': 'in_progress'})
                     created_count += 1
                     _logger.info(
                         "Shopify payment sync: payment %s for SO %s "
