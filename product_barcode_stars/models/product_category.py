@@ -28,20 +28,35 @@ class ProductCategory(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Collect all existing numeric category numbers once, then assign
+        # unique sequential numbers to every record in the batch.
+        existing = self._get_existing_category_numbers()
+        next_num = 1
         for vals in vals_list:
             if not vals.get('category_number'):
-                vals['category_number'] = self._get_next_category_number()
+                # Skip numbers already used by existing records
+                while str(next_num).zfill(2) in existing:
+                    next_num += 1
+                vals['category_number'] = str(next_num).zfill(2)
+                existing.add(str(next_num).zfill(2))
+                next_num += 1
         return super().create(vals_list)
 
     @api.model
+    def _get_existing_category_numbers(self):
+        """Return a set of all category_number values currently in the database."""
+        cats = self.search([('category_number', '!=', False)])
+        return {c.category_number for c in cats if c.category_number}
+
+    @api.model
     def _get_next_category_number(self):
-        """Auto-generate next category number as 2-digit string (01, 02, ...)"""
-        last = self.search([], order='category_number desc', limit=1)
-        if last and last.category_number:
-            try:
-                next_num = int(last.category_number) + 1
-            except ValueError:
-                next_num = 1
-        else:
-            next_num = 1
-        return str(next_num).zfill(2)
+        """Auto-generate next available category number as 2-digit string (01, 02, ...).
+        Scans all existing numeric category numbers and returns the lowest available one.
+        """
+        existing = self._get_existing_category_numbers()
+        if not existing:
+            return '01'
+        num = 1
+        while str(num).zfill(2) in existing:
+            num += 1
+        return str(num).zfill(2)
