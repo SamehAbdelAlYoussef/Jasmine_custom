@@ -1539,6 +1539,11 @@ class ShopifySync(models.Model):
         from Shopify (e.g. ``orders/updated`` firing twice for the same
         change).
 
+        **Only deduplicates the SAME topic.**  Different topics (e.g.
+        ``orders/updated`` followed by ``orders/cancelled``) are always
+        allowed through — otherwise a rapid ``orders/updated`` would
+        block the cancellation webhook that arrives a moment later.
+
         Updates ``webhook_last_processed`` atomically via a raw SQL
         compare-and-swap so concurrent webhooks see a consistent view.
         """
@@ -1653,11 +1658,68 @@ class ShopifySync(models.Model):
                     existing.name, exc,
                 )
         else:
-            _logger.info(
-                "Shopify webhook: SO %s is in state '%s' — "
-                "skipping line/shipping updates to avoid duplicates",
-                existing.name, existing.state,
-            )
+            # Order is confirmed/cancelled/done — cannot delete locked lines.
+            # MERGE mode: only add NEW products that don't already exist
+            # on the order, to avoid duplicates while allowing additions.
+            lines_added = 0
+            existing_lines = existing.order_line
+            # Build a set of (product_id, name) for quick lookup
+            existing_keys = set()
+            for line in existing_lines:
+                key = (line.product_id.id, line.name.strip() if line.name else '')
+                existing_keys.add(key)
+
+            for item in order_data.get('line_items', []):
+                title = self._safe_strip(item.get('title') or item.get('name')) or 'Product'
+                sku = self._safe_strip(item.get('sku'))
+                product = self._find_product(sku, title)
+                product_id = product.id if product else False
+                # Check if this line already exists
+                if (product_id, title) in existing_keys:
+                    _logger.debug(
+                        "Shopify webhook: line '%s' already exists on SO %s, skip",
+                        title, existing.name,
+                    )
+                    continue
+                try:
+                    self._create_order_line(existing, item)
+                    existing_keys.add((product_id, title))
+                    lines_added += 1
+                    _logger.info(
+                        "Shopify webhook: added new line '%s' to SO %s",
+                        title, existing.name,
+                    )
+                except Exception as exc:
+                    _logger.warning(
+                        "Shopify webhook: line '%s' failed for SO %s — %s",
+                        title, existing.name, exc,
+                    )
+
+            # -- shipping: only add if not already present -----------------
+            if not any(
+                l.product_id.name == 'Shopify Shipping' for l in existing_lines
+            ):
+                try:
+                    self._create_shipping_line(existing, order_data)
+                    lines_added += 1
+                except Exception as exc:
+                    _logger.warning(
+                        "Shopify webhook: shipping update failed for SO %s — %s",
+                        existing.name, exc,
+                    )
+
+            if lines_added:
+                _logger.info(
+                    "Shopify webhook: merged %d new lines onto SO %s (state=%s)",
+                    lines_added, existing.name, existing.state,
+                )
+            else:
+                _logger.info(
+                    "Shopify webhook: SO %s is in state '%s' — "
+                    "no new lines to add, all %d Shopify items already exist",
+                    existing.name, existing.state,
+                    len(order_data.get('line_items', [])),
+                )
 
         # Order stays draft / confirmed as-is — manual review only
 
@@ -1682,11 +1744,6 @@ class ShopifySync(models.Model):
                 "Shopify webhook: cancel for #%s but SO not found", order_ref,
             )
             return {'status': 'not_found', 'shopify_order': order_ref}
-
-        # -- dedup: skip if another webhook was processed very recently --
-        if self._is_duplicate_webhook(existing, 'orders/cancelled'):
-            return {'status': 'skipped', 'sale_order_id': existing.id,
-                    'reason': 'duplicate_webhook'}
 
         cancel_reason = order_data.get('cancel_reason', '') or 'Cancelled in Shopify'
         try:
@@ -1836,11 +1893,6 @@ class ShopifySync(models.Model):
                     order_ref,
                 )
                 return {'status': 'not_found', 'shopify_order': order_ref}
-
-        # -- dedup: skip if another webhook was processed very recently --
-        if self._is_duplicate_webhook(existing, 'orders/fulfilled'):
-            return {'status': 'skipped', 'sale_order_id': existing.id,
-                    'reason': 'duplicate_webhook'}
 
         fulfillments = order_data.get('fulfillments', [])
         if fulfillments:
