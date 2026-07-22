@@ -13,8 +13,7 @@
                        optional="show"/>
                 <field name="x_shopify_id"
                        string="Shopify"
-                       optional="hide"
-                       groups="base.group_system"/>
+                       optional="hide"/>
             </field>
         </field>
     </record>
@@ -41,8 +40,7 @@
                        string="Missing Products"/>
                 <field name="x_shopify_id"
                        string="Shopify ID"
-                       readonly="1"
-                       groups="base.group_system"/>
+                       readonly="1"/>
                 <field name="x_shopify_payment_synced" invisible="1"/>
             </field>
 
