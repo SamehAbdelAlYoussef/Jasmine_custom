@@ -6,6 +6,19 @@
     <delete model="ir.ui.view" search="[('name','ilike','product.template.search.inherit.qr')]"/>
     <delete model="ir.ui.view" search="[('name','ilike','product.template.tree.inherit.qr')]"/>
 
+    <!-- Product Form View — Size & Brand fields in General Information -->
+    <record id="view_product_template_add_size_brand" model="ir.ui.view">
+        <field name="name">product.template.form.size.brand</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']//group[@name='group_general']" position="inside">
+                <field name="x_brand" string="البراند"/>
+                <field name="x_size" string="الحجم"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Product Form View — Barcode tab -->
     <record id="view_product_template_form_inherit_qr" model="ir.ui.view">
         <field name="name">product.template.form.inherit.qr</field>

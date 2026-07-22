@@ -297,6 +297,15 @@ class ProductProduct(models.Model):
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
+    x_size = fields.Char(
+        string='Size',
+        help="Product size (e.g. 100ml, XL, 50g, ...)",
+    )
+    x_brand = fields.Char(
+        string='Brand',
+        help="Product brand name",
+    )
+
     barcode = fields.Char(
         string='Barcode',
         compute='_compute_barcode',
