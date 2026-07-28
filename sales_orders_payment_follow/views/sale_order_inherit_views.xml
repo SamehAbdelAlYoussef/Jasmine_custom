@@ -25,4 +25,32 @@
             </field>
         </field>
     </record>
+
+    <!-- Replace "Create Invoice" wizard button with direct invoice creation -->
+    <record id="view_order_form_inherit_create_invoice_sp" model="ir.ui.view">
+        <field name="name">sale.order.form.create.invoice.sp</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Hide the original wizard-driven buttons -->
+            <button id="create_invoice" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </button>
+            <button id="create_invoice_percentage" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </button>
+            <!-- Add our direct button -->
+            <button id="create_invoice" position="after">
+                <button
+                    string="Create Invoice"
+                    id="create_invoice_direct"
+                    name="action_create_invoice_direct"
+                    type="object"
+                    class="btn-primary"
+                    data-hotkey="q"
+                    invisible="invoice_status == 'invoiced'"/>
+            </button>
+        </field>
+    </record>
+
 </odoo>

@@ -115,6 +115,90 @@ class SaleOrder(models.Model):
             },
         }
 
+    # ------------------------------------------------------------
+    # Direct Invoice Creation — auto-confirm + invoice + stay on SO
+    # ------------------------------------------------------------
+    def action_create_invoice_direct(self):
+        """Auto-confirm the SO (if needed), validate delivery, create
+        and post the invoice directly — no wizard, no redirect."""
+        self.ensure_one()
+
+        # 1 — Confirm the order if not yet done
+        if self.state in ('draft', 'sent'):
+            res = self.action_confirm()
+            if isinstance(res, dict) and res.get('type') != 'ir.actions.act_window_close':
+                return res
+            self.invalidate_recordset(['state'])
+
+        # 2 — Auto-validate any outstanding deliveries
+        pickings_to_validate = self.picking_ids.filtered(
+            lambda p: p.state not in ('done', 'cancel')
+        )
+        for picking in pickings_to_validate:
+            if picking.state in ('draft', 'waiting', 'confirmed'):
+                picking.action_assign()
+            if picking.state != 'assigned':
+                continue
+            for move in picking.move_ids:
+                if move.product_uom_qty > 0 and not move.quantity:
+                    move.quantity = move.product_uom_qty
+            picking.with_context(skip_backorder=True).button_validate()
+        # Flush + invalidate to pick up newly delivered quantities
+        self.env.flush_all()
+        self.invalidate_recordset()
+        self.order_line.invalidate_recordset()
+
+        # 3 — Ensure every line is invoiceable: for delivery-policy
+        #     products whose qty_delivered may still be 0 (e.g. no
+        #     stock or compute lag), force-set it to the ordered qty.
+        for line in self.order_line:
+            if line.display_type:
+                continue
+            if line.product_id.invoice_policy == 'delivery' \
+                    and not line.qty_delivered:
+                line.qty_delivered = line.product_uom_qty
+
+        # 4 — Already invoiced?  Notify and stay
+        if self.invoice_status == 'invoiced':
+            self.message_post(
+                body=_('Invoice already exists: %(invoices)s.',
+                       invoices=', '.join(self.invoice_ids.mapped('name'))))
+            return self._notify(
+                _('Already invoiced.'), 'warning',
+            )
+
+        # 5 — Create & post the invoice
+        invoices = self._create_invoices()
+        if invoices:
+            # Post (validate) the invoice immediately
+            try:
+                invoices.action_post()
+            except Exception:
+                pass  # stays draft if posting fails
+            self.message_post(
+                body=_('Invoice %(name)s created automatically.',
+                       name=invoices[0].name))
+            return self._notify(
+                _('Invoice %(name)s created.', name=invoices[0].name),
+                'success',
+            )
+        return self._notify(
+            _('No invoiceable lines found.'), 'danger',
+        )
+
+    def _notify(self, message, msg_type):
+        """Return a client action that shows a toast notification."""
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Sales Visit Plan'),
+                'message': message,
+                'type': msg_type,
+                'sticky': False,
+            },
+        }
+
     def action_confirm(self):
         """Confirm the SO and auto-validate the delivery picking.
 
