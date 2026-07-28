@@ -116,10 +116,41 @@ class SaleOrder(models.Model):
         }
 
     def action_confirm(self):
-        """Allow confirmation freely — payment gate removed per business requirement.
+        """Confirm the SO and auto-validate the delivery picking.
 
-        Shopify orders are already paid on-platform; manual orders may
-        receive payments after confirmation.  The ``confirm_on_percent``
-        field is kept for reporting but no longer blocks confirmation.
+        After the standard confirmation flow (which creates the stock
+        picking via procurement rules), this method:
+
+        1. Reserves / assigns the picking (``action_assign``) if not yet ready.
+        2. Sets done quantities on moves to their full demand so the entire
+           delivery ships immediately.
+        3. Calls ``button_validate`` to complete the transfer without the
+           backorder wizard (``skip_backorder=True``).
+
+        Already-done and cancelled pickings are skipped.
         """
-        return super(SaleOrder, self).action_confirm()
+        res = super(SaleOrder, self).action_confirm()
+
+        # Auto-validate delivery pickings linked to this sale order
+        pickings_to_validate = self.picking_ids.filtered(
+            lambda p: p.state not in ('done', 'cancel')
+        )
+        for picking in pickings_to_validate:
+            # Reserve stock if not already assigned
+            if picking.state in ('draft', 'waiting', 'confirmed'):
+                picking.action_assign()
+
+            # If still not assigned (e.g. not enough stock), skip
+            if picking.state != 'assigned':
+                continue
+
+            # Mark full demand as done on each move (the inverse `_set_quantity`
+            # distributes the quantity across the move lines automatically)
+            for move in picking.move_ids:
+                if move.product_uom_qty > 0 and not move.quantity:
+                    move.quantity = move.product_uom_qty
+
+            # Validate without showing the backorder wizard
+            picking.with_context(skip_backorder=True).button_validate()
+
+        return res
