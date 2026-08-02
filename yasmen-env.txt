@@ -2,7 +2,8 @@ server key
 ssh root@89.117.51.121
 password  >>
 Ss01017729427
-
+/////master password
+jasmine2026
 Logs
 sudo docker compose logs --tail 50 -f web_ent
 restart
