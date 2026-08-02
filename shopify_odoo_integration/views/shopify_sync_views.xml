@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ══════════════════════════════════════════════════════════════════
+         Actions (must be defined BEFORE views that reference them)
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="action_shopify_sync" model="ir.actions.act_window">
+        <field name="name">Shopify Sync</field>
+        <field name="res_model">shopify.sync</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_shopify_order_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Shopify Orders by Date</field>
+        <field name="res_model">shopify.order.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Views
+         ════════════════════════════════════════════════════════════════ -->
+
     <!-- Shopify Sync Form -->
     <record id="view_shopify_sync_form" model="ir.ui.view">
         <field name="name">shopify.sync.form</field>
@@ -81,19 +102,23 @@
         </field>
     </record>
 
-    <!-- Shopify Sync Action -->
-    <record id="action_shopify_sync" model="ir.actions.act_window">
-        <field name="name">Shopify Sync</field>
-        <field name="res_model">shopify.sync</field>
-        <field name="view_mode">list,form</field>
-        <field name="target">current</field>
-    </record>
-
+    <!-- ══════════════════════════════════════════════════════════════════
+         Menus
+         ════════════════════════════════════════════════════════════════ -->
     <menuitem
         id="menu_shopify_sync"
         name="Shopify Sync"
         parent="sale.menu_sales_config"
         action="action_shopify_sync"
-        sequence="31"/>
+        sequence="31"
+    />
+
+    <menuitem
+        id="menu_shopify_order_import_wizard"
+        name="Import Orders by Date Range"
+        parent="menu_shopify_sync"
+        action="action_shopify_order_import_wizard"
+        sequence="10"
+    />
 
 </odoo>

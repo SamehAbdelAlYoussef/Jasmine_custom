@@ -63,25 +63,4 @@
         </field>
     </record>
 
-    <!-- ══════════════════════════════════════════════════════════════════
-         Action (opens wizard in a dialog)
-         ════════════════════════════════════════════════════════════════ -->
-    <record id="action_shopify_order_import_wizard" model="ir.actions.act_window">
-        <field name="name">Import Shopify Orders by Date</field>
-        <field name="res_model">shopify.order.import.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">new</field>
-    </record>
-
-    <!-- ══════════════════════════════════════════════════════════════════
-         Menu item (under Shopify Sync)
-         ════════════════════════════════════════════════════════════════ -->
-    <menuitem
-        id="menu_shopify_order_import_wizard"
-        name="Import Orders by Date Range"
-        parent="menu_shopify_sync"
-        action="action_shopify_order_import_wizard"
-        sequence="10"
-    />
-
 </odoo>
