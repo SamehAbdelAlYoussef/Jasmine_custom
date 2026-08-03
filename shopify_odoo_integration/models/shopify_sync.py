@@ -839,16 +839,33 @@ class ShopifySync(models.Model):
             # UNIQUE constraint fired — another worker created this order
             # between our idempotency check and INSERT.  The savepoint
             # kept our outer transaction intact.
-            existing = SaleOrder.search(
-                [('x_shopify_id', '=', shopify_id)], limit=1,
-            )
+            #
+            # The other worker's transaction may not be committed yet,
+            # so we retry the lookup with a brief sleep (READ COMMITTED
+            # sees only committed data, while the UNIQUE constraint saw
+            # the uncommitted row — hence the gap).
+            existing = None
+            for _retry in range(10):
+                time.sleep(0.2)
+                # In READ COMMITTED each SELECT gets a fresh snapshot,
+                # so it sees the other worker's row once committed.
+                existing = SaleOrder.search(
+                    [('x_shopify_id', '=', shopify_id)], limit=1,
+                )
+                if existing:
+                    break
             if existing:
-                _logger.debug(
+                _logger.info(
                     "Shopify sync: order %s created by concurrent request "
                     "(SO #%s), skipping",
                     order_number, existing.name,
                 )
                 return {'status': 'skipped', 'sale_order_id': existing.id}
+            # still not found after 2 seconds — truly exceptional
+            _logger.error(
+                "Shopify sync: order %s — duplicate key but cannot find "
+                "existing SO after retries", order_number,
+            )
             raise
 
         # ── Order lines — skip if already populated ──────────────────
