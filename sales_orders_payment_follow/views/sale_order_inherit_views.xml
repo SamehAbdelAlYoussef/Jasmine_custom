@@ -22,6 +22,8 @@
                  <field name="confirm_on_percent"
                        optional="hide"
                        groups="sales_orders_payment_follow.group_modify_confirm_percent"/>
+                <field name="partner_invoice_id" string="Invoice Address" optional="hide"/>
+                <field name="partner_shipping_id" string="Delivery Address" optional="hide"/>
             </field>
         </field>
     </record>

@@ -24,6 +24,8 @@
                  <field name="confirm_on_percent"
                        optional="hide"
                        groups="sales_orders_payment_follow.group_modify_confirm_percent"/>
+                <field name="partner_invoice_id" string="Invoice Address" optional="hide"/>
+                <field name="partner_shipping_id" string="Delivery Address" optional="hide"/>
             </field>
         </field>
     </record>
@@ -47,6 +49,19 @@
                  <field name="confirm_on_percent"
                        optional="hide"
                        groups="sales_orders_payment_follow.group_modify_confirm_percent"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Add Invoice Address and Delivery Address under Customer field -->
+    <record id="view_order_form_inherit_addresses_sp" model="ir.ui.view">
+        <field name="name">sale.order.form.addresses.sp</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="partner_invoice_id" string="Invoice Address"/>
+                <field name="partner_shipping_id" string="Delivery Address"/>
             </field>
         </field>
     </record>
