@@ -19,15 +19,12 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # 1. تحديث الكود من GitHub
             cd /opt/odoo_docker/Jasmine_custom
             git reset --hard origin/main
             git pull origin main
             
-            # 2. الانتقال للمسار الرئيسي
             cd /opt/odoo_docker
             
-            # 3. إعادة التشغيل (أسرع وأخف عملية)
             if command -v docker compose &> /dev/null; then
                 docker compose restart web_ent
             else
