@@ -886,6 +886,16 @@ class ShopifySync(models.Model):
                         item.get('title', '?'), order_number, exc,
                     )
 
+        # ── Discount line ────────────────────────────────────────────
+        if not any(l.product_id.name == 'Shopify Discount' for l in sale_order.order_line):
+            try:
+                self._create_discount_line(sale_order, order_data)
+            except Exception as exc:
+                _logger.warning(
+                    "Shopify sync: discount line failed for #%s — %s",
+                    order_number, exc,
+                )
+
         # ── Shipping line ────────────────────────────────────────────
         if not sale_order.order_line or not any(
             l.product_id.name == 'Shopify Shipping' for l in sale_order.order_line
@@ -1154,43 +1164,20 @@ class ShopifySync(models.Model):
         return (value or '').strip()
 
     def _create_order_line(self, sale_order, item):
-        """Create a sale.order.line from a Shopify line item.
+        """Create a sale.order.line from a Shopify line item at full price.
 
-        Searches for the product by SKU then by name.  If the product is
-        **not** found in Odoo, the line is still created but with no
-        product linked and the ``x_is_missing_product`` flag set so users
-        can easily spot lines that need attention.
-
-        Discount handling:
-          Shopify sends ``discount_allocations`` per line item (sum = total_discount).
-          We convert that to a percentage discount on the Odoo line so the
-          discount is visible in the UI and reflected in the subtotal.
+        Discounts are handled separately via _create_discount_line so the
+        total always matches Shopify exactly with no rounding issues.
         """
         title = self._safe_strip(item.get('title') or item.get('name')) or 'Product'
         sku = self._safe_strip(item.get('sku'))
         product = self._find_product(sku, title)
 
-        price_unit = float(item.get('price', 0.0))
-        quantity = float(item.get('quantity', 1))
-
-        # Calculate discount percentage from Shopify discount_allocations
-        discount_pct = 0.0
-        total_discount = float(item.get('total_discount', 0.0) or 0.0)
-        if not total_discount:
-            # Fallback: sum discount_allocations manually
-            allocations = item.get('discount_allocations', [])
-            total_discount = sum(float(a.get('amount', 0.0)) for a in allocations)
-
-        if total_discount and price_unit and quantity:
-            line_total = price_unit * quantity
-            discount_pct = round(min(total_discount / line_total * 100.0, 100.0), 4)
-
         vals = {
             'order_id': sale_order.id,
             'product_id': product.id if product else False,
-            'product_uom_qty': quantity,
-            'price_unit': price_unit,
-            'discount': discount_pct,
+            'product_uom_qty': float(item.get('quantity', 1)),
+            'price_unit': float(item.get('price', 0.0)),
             'name': title,
         }
 
@@ -1199,6 +1186,48 @@ class ShopifySync(models.Model):
             vals['x_shopify_product_name'] = title
 
         return self.env['sale.order.line'].create(vals)
+
+    def _create_discount_line(self, sale_order, order_data):
+        """Create a negative-price line for order-level discounts.
+
+        Sums discount_allocations across all line items so the amount is
+        exact (no percentage rounding). Skips if there is nothing to discount.
+        """
+        total_discount = sum(
+            float(a.get('amount', 0.0))
+            for item in order_data.get('line_items', [])
+            for a in item.get('discount_allocations', [])
+        )
+        if not total_discount:
+            return None
+
+        # Label: use discount_codes title if available, else "Custom discount"
+        discount_codes = order_data.get('discount_codes', [])
+        if discount_codes:
+            label = 'Discount: ' + ', '.join(d.get('code', '') for d in discount_codes if d.get('code'))
+        else:
+            discount_apps = order_data.get('discount_applications', [])
+            titles = [d.get('title') or d.get('code') or 'Discount' for d in discount_apps
+                      if d.get('target_type') != 'shipping_line']
+            label = 'Discount: ' + ', '.join(titles) if titles else 'Shopify Discount'
+
+        Product = self.env['product.product']
+        discount_product = Product.search([('name', '=', 'Shopify Discount')], limit=1)
+        if not discount_product:
+            discount_product = Product.create({
+                'name': 'Shopify Discount',
+                'type': 'service',
+                'sale_ok': True,
+                'purchase_ok': False,
+            })
+
+        return self.env['sale.order.line'].create({
+            'order_id': sale_order.id,
+            'product_id': discount_product.id,
+            'product_uom_qty': 1,
+            'price_unit': -total_discount,
+            'name': label,
+        })
 
     def _find_product(self, sku, title):
         """Look up a product by SKU then by name.
