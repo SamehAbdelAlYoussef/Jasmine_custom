@@ -53,9 +53,13 @@
                     </group>
                     <separator string="Barcode Structure"/>
                     <div class="alert alert-info" role="alert" style="margin-bottom:0;">
-                        <strong>Format:</strong> [Category Number] [Vendor Initials] [Sequence]
+                        <strong>Format:</strong> [Category Number?] [Vendor Initials?] [Internal Reference]
                         <br/>
-                        <strong>Example:</strong> 01AN00001 = Category(01) + Vendor Al-Nahar(AN) + Seq(00001)
+                        <strong>Parts added only when set:</strong>
+                        <br/>
+                        01AN2121 = Category(01) + Vendor(AN) + Ref(2121)
+                        <br/>
+                        2121 = no category, no vendor → Reference only
                     </div>
                 </page>
             </xpath>
@@ -71,6 +75,32 @@
             <field name="name" position="after">
                 <field name="barcode" optional="show"/>
             </field>
+        </field>
+    </record>
+
+    <!-- Server Action: Generate Barcode (list view multi-select) -->
+    <record id="action_server_generate_barcode" model="ir.actions.server">
+        <field name="name">Generate Barcode</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    records.action_generate_barcode()
+        </field>
+    </record>
+
+    <!-- Server Action: Regenerate Barcode (list view multi-select) -->
+    <record id="action_server_regenerate_barcode" model="ir.actions.server">
+        <field name="name">Regenerate Barcode</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    records.action_regenerate_barcode()
         </field>
     </record>
 

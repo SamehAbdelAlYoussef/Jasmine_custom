@@ -5,6 +5,7 @@ import io
 import base64
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -91,31 +92,33 @@ class ProductProduct(models.Model):
 
     def _build_barcode(self, product):
         """
-        Build barcode: [CategoryNumber][VendorInitials][default_code]
+        Build barcode: [CategoryNumber?][VendorInitials?][default_code]
 
-        Format example: 01ANPROD001
-          01   = category_number from product.category
-          AN   = first 2 chars of vendor name (Arabic transliterated to Latin)
-          PROD001 = product's Internal Reference (default_code)
+        Parts are only included when actually present — no fake defaults (00, XX).
+        Examples:
+          category(01) + vendor(AN) + ref(2121) → 01AN2121
+          category(01) + no vendor  + ref(2121) → 012121
+          no category  + vendor(AN) + ref(2121) → AN2121
+          no category  + no vendor  + ref(2121) → 2121
 
         Returns False if default_code is not set.
         """
         if not product.default_code:
             return False
 
-        # Category number (2-digit)
-        cat_num = '00'
-        if product.categ_id and product.categ_id.category_number:
-            cat_num = product.categ_id.category_number
+        prefix = ''
 
-        # Vendor initials (2 Latin chars)
+        # Category number — only if explicitly set on the category
+        if product.categ_id and product.categ_id.category_number:
+            prefix += product.categ_id.category_number
+
+        # Vendor initials — only if a vendor is actually linked
         seller = None
         if product.product_tmpl_id and product.product_tmpl_id.seller_ids:
             seller = product.product_tmpl_id.seller_ids[0].partner_id
         elif product.seller_ids:
             seller = product.seller_ids[0].partner_id
 
-        vendor_initials = 'XX'
         if seller and seller.name:
             name_clean = re.sub(r'[^a-zA-Z؀-ۿ]', '', seller.name).strip()
             if name_clean:
@@ -125,19 +128,54 @@ class ProductProduct(models.Model):
                     vendor_initials = vendor_initials[:2]
                 elif len(vendor_initials) < 2:
                     vendor_initials = vendor_initials.ljust(2, 'X')
+                prefix += vendor_initials
 
-        return '%s%s%s' % (cat_num, vendor_initials, product.default_code)
+        return '%s%s' % (prefix, product.default_code)
 
     def action_generate_barcode(self):
-        """Generate barcode from default_code — skips products that already have a barcode."""
+        """Generate barcode from default_code — skips products that already have a barcode.
+
+        Raises UserError if any two selected products share the same default_code
+        (which would produce duplicate barcodes).
+        """
+        # Uniqueness check: default_code must not be duplicated among selected products
+        codes = [p.default_code for p in self if p.default_code and not p.barcode]
+        if len(codes) != len(set(codes)):
+            from collections import Counter
+            duplicates = [c for c, n in Counter(codes).items() if n > 1]
+            raise UserError(
+                _('الرقم المرجعي (Reference) مكرر في المنتجات المختارة:\n%s\n\nيجب أن يكون كل رقم مرجعي فريداً.') % ', '.join(duplicates)
+            )
+
         generated_count = 0
+        skipped_no_ref = 0
         for product in self:
             if product.barcode:
                 continue
+            if not product.default_code:
+                skipped_no_ref += 1
+                continue
+            # Check barcode not already used by another product
+            existing = self.env['product.product'].search([
+                ('barcode', '=', self._build_barcode(product)),
+                ('id', '!=', product.id),
+            ], limit=1)
+            if existing:
+                raise UserError(
+                    _('الباركود "%s" مستخدم مسبقاً من المنتج "%s".\nتأكد أن الرقم المرجعي فريد.') % (
+                        self._build_barcode(product), existing.display_name
+                    )
+                )
             barcode_val = self._build_barcode(product)
             if barcode_val:
                 product.write({'barcode': barcode_val})
                 generated_count += 1
+
+        msg_parts = []
+        if generated_count:
+            msg_parts.append(_('تم إنشاء %(count)s باركود.') % {'count': generated_count})
+        if skipped_no_ref:
+            msg_parts.append(_('%(count)s منتج بدون رقم مرجعي — تم تخطيه.') % {'count': skipped_no_ref})
 
         if generated_count:
             return {
@@ -145,7 +183,7 @@ class ProductProduct(models.Model):
                 'tag': 'display_notification',
                 'params': {
                     'title': _('✅ باركود تم إنشاؤه'),
-                    'message': _('تم إنشاء %(count)s باركود من الرقم المرجعي.') % {'count': generated_count},
+                    'message': ' | '.join(msg_parts),
                     'type': 'success',
                     'sticky': False,
                 },
