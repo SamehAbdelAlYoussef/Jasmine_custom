@@ -1190,26 +1190,54 @@ class ShopifySync(models.Model):
     def _create_discount_line(self, sale_order, order_data):
         """Create a negative-price line for order-level discounts.
 
-        Sums discount_allocations across all line items so the amount is
-        exact (no percentage rounding). Skips if there is nothing to discount.
+        Handles two Shopify discount structures:
+        1. Regular orders  → discount_allocations per line item
+        2. Draft orders    → applied_discount on the order or per line item
         """
+        total_discount = 0.0
+        label = 'Shopify Discount'
+
+        # ── 1. Regular order: sum discount_allocations from all line items ──
         total_discount = sum(
             float(a.get('amount', 0.0))
             for item in order_data.get('line_items', [])
             for a in item.get('discount_allocations', [])
         )
+
+        # ── 2. Draft order: applied_discount at order level ─────────────────
+        if not total_discount:
+            applied = order_data.get('applied_discount') or {}
+            total_discount = float(applied.get('amount', 0.0) or 0.0)
+            if total_discount:
+                label = 'Discount: ' + (applied.get('title') or applied.get('value_type') or 'Custom discount')
+
+        # ── 3. Draft order: applied_discount per line item ──────────────────
+        if not total_discount:
+            for item in order_data.get('line_items', []):
+                item_discount = item.get('applied_discount') or {}
+                total_discount += float(item_discount.get('amount', 0.0) or 0.0)
+
+        # ── 4. Fallback: total_discounts on order header (minus shipping) ───
+        if not total_discount:
+            total_discount = float(order_data.get('total_discounts', 0.0) or 0.0)
+
         if not total_discount:
             return None
 
-        # Label: use discount_codes title if available, else "Custom discount"
-        discount_codes = order_data.get('discount_codes', [])
-        if discount_codes:
-            label = 'Discount: ' + ', '.join(d.get('code', '') for d in discount_codes if d.get('code'))
-        else:
-            discount_apps = order_data.get('discount_applications', [])
-            titles = [d.get('title') or d.get('code') or 'Discount' for d in discount_apps
-                      if d.get('target_type') != 'shipping_line']
-            label = 'Discount: ' + ', '.join(titles) if titles else 'Shopify Discount'
+        # Build label from discount_codes or discount_applications
+        if label == 'Shopify Discount':
+            discount_codes = order_data.get('discount_codes', [])
+            if discount_codes:
+                label = 'Discount: ' + ', '.join(d.get('code', '') for d in discount_codes if d.get('code'))
+            else:
+                discount_apps = order_data.get('discount_applications', [])
+                titles = [
+                    d.get('title') or d.get('code') or 'Discount'
+                    for d in discount_apps
+                    if d.get('target_type') != 'shipping_line'
+                ]
+                if titles:
+                    label = 'Discount: ' + ', '.join(titles)
 
         Product = self.env['product.product']
         discount_product = Product.search([('name', '=', 'Shopify Discount')], limit=1)
