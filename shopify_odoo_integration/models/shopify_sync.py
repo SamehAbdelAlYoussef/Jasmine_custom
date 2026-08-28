@@ -1188,43 +1188,66 @@ class ShopifySync(models.Model):
         return self.env['sale.order.line'].create(vals)
 
     def _create_discount_line(self, sale_order, order_data):
-        """Create a negative-price line for order-level discounts.
+        """Create a negative-price line for order-level discounts."""
 
-        Handles two Shopify discount structures:
-        1. Regular orders  → discount_allocations per line item
-        2. Draft orders    → applied_discount on the order or per line item
-        """
+        # Log all discount-related fields for debugging
+        _logger.info(
+            "Shopify discount debug — order #%s:\n"
+            "  total_discounts=%s\n"
+            "  discount_codes=%s\n"
+            "  discount_applications=%s\n"
+            "  applied_discount=%s\n"
+            "  line_items[0].discount_allocations=%s\n"
+            "  line_items[0].applied_discount=%s\n"
+            "  line_items[0].total_discount=%s",
+            order_data.get('order_number'),
+            order_data.get('total_discounts'),
+            order_data.get('discount_codes'),
+            order_data.get('discount_applications'),
+            order_data.get('applied_discount'),
+            order_data.get('line_items', [{}])[0].get('discount_allocations') if order_data.get('line_items') else None,
+            order_data.get('line_items', [{}])[0].get('applied_discount') if order_data.get('line_items') else None,
+            order_data.get('line_items', [{}])[0].get('total_discount') if order_data.get('line_items') else None,
+        )
+
         total_discount = 0.0
         label = 'Shopify Discount'
 
-        # ── 1. Regular order: sum discount_allocations from all line items ──
-        total_discount = sum(
-            float(a.get('amount', 0.0))
-            for item in order_data.get('line_items', [])
-            for a in item.get('discount_allocations', [])
-        )
+        # ── 1. total_discounts on order header (most reliable) ──────────────
+        total_discount = float(order_data.get('total_discounts', 0.0) or 0.0)
 
-        # ── 2. Draft order: applied_discount at order level ─────────────────
+        # ── 2. Regular order: sum discount_allocations from all line items ──
+        if not total_discount:
+            total_discount = sum(
+                float(a.get('amount', 0.0))
+                for item in order_data.get('line_items', [])
+                for a in item.get('discount_allocations', [])
+            )
+
+        # ── 3. Per line item total_discount field ───────────────────────────
+        if not total_discount:
+            total_discount = sum(
+                float(item.get('total_discount', 0.0) or 0.0)
+                for item in order_data.get('line_items', [])
+            )
+
+        # ── 4. Draft order: applied_discount at order level ─────────────────
         if not total_discount:
             applied = order_data.get('applied_discount') or {}
             total_discount = float(applied.get('amount', 0.0) or 0.0)
             if total_discount:
-                label = 'Discount: ' + (applied.get('title') or applied.get('value_type') or 'Custom discount')
+                label = 'Discount: ' + (applied.get('title') or 'Custom discount')
 
-        # ── 3. Draft order: applied_discount per line item ──────────────────
+        # ── 5. Draft order: applied_discount per line item ──────────────────
         if not total_discount:
             for item in order_data.get('line_items', []):
                 item_discount = item.get('applied_discount') or {}
                 total_discount += float(item_discount.get('amount', 0.0) or 0.0)
 
-        # ── 4. Fallback: total_discounts on order header (minus shipping) ───
-        if not total_discount:
-            total_discount = float(order_data.get('total_discounts', 0.0) or 0.0)
-
         if not total_discount:
             return None
 
-        # Build label from discount_codes or discount_applications
+        # Build label
         if label == 'Shopify Discount':
             discount_codes = order_data.get('discount_codes', [])
             if discount_codes:
@@ -1249,6 +1272,10 @@ class ShopifySync(models.Model):
                 'purchase_ok': False,
             })
 
+        _logger.info(
+            "Shopify discount: creating line — order #%s, amount=%.2f, label=%s",
+            order_data.get('order_number'), total_discount, label,
+        )
         return self.env['sale.order.line'].create({
             'order_id': sale_order.id,
             'product_id': discount_product.id,
