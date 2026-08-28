@@ -1160,16 +1160,37 @@ class ShopifySync(models.Model):
         **not** found in Odoo, the line is still created but with no
         product linked and the ``x_is_missing_product`` flag set so users
         can easily spot lines that need attention.
+
+        Discount handling:
+          Shopify sends ``discount_allocations`` per line item (sum = total_discount).
+          We convert that to a percentage discount on the Odoo line so the
+          discount is visible in the UI and reflected in the subtotal.
         """
         title = self._safe_strip(item.get('title') or item.get('name')) or 'Product'
         sku = self._safe_strip(item.get('sku'))
         product = self._find_product(sku, title)
 
+        price_unit = float(item.get('price', 0.0))
+        quantity = float(item.get('quantity', 1))
+
+        # Calculate discount percentage from Shopify discount_allocations
+        discount_pct = 0.0
+        total_discount = float(item.get('total_discount', 0.0) or 0.0)
+        if not total_discount:
+            # Fallback: sum discount_allocations manually
+            allocations = item.get('discount_allocations', [])
+            total_discount = sum(float(a.get('amount', 0.0)) for a in allocations)
+
+        if total_discount and price_unit and quantity:
+            line_total = price_unit * quantity
+            discount_pct = round(min(total_discount / line_total * 100.0, 100.0), 4)
+
         vals = {
             'order_id': sale_order.id,
             'product_id': product.id if product else False,
-            'product_uom_qty': item.get('quantity', 1),
-            'price_unit': float(item.get('price', 0.0)),
+            'product_uom_qty': quantity,
+            'price_unit': price_unit,
+            'discount': discount_pct,
             'name': title,
         }
 
