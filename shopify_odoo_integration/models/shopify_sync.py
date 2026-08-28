@@ -1771,6 +1771,15 @@ class ShopifySync(models.Model):
                         item.get('title', '?'), existing.name, exc,
                     )
 
+            # -- discount line -------------------------------------------
+            try:
+                self._create_discount_line(existing, order_data)
+            except Exception as exc:
+                _logger.warning(
+                    "Shopify webhook: discount line failed for SO %s — %s",
+                    existing.name, exc,
+                )
+
             # -- update shipping -----------------------------------------
             try:
                 self._create_shipping_line(existing, order_data)
