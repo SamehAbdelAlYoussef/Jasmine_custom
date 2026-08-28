@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-import re
 import io
 import base64
 
@@ -8,47 +7,6 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Arabic → Latin transliteration (used for vendor initials in barcode prefix)
-# ---------------------------------------------------------------------------
-_ARABIC_TO_LATIN = {
-    'ا': 'A', 'أ': 'A', 'إ': 'A', 'آ': 'A',
-    'ب': 'B',
-    'ت': 'T', 'ث': 'T',
-    'ج': 'J',
-    'ح': 'H', 'خ': 'K',
-    'د': 'D', 'ذ': 'D',
-    'ر': 'R',
-    'ز': 'Z',
-    'س': 'S', 'ش': 'S',
-    'ص': 'S', 'ض': 'D',
-    'ط': 'T', 'ظ': 'Z',
-    'ع': 'A', 'غ': 'G',
-    'ف': 'F', 'ق': 'Q',
-    'ك': 'K',
-    'ل': 'L',
-    'م': 'M',
-    'ن': 'N',
-    'ه': 'H', 'ة': 'H',
-    'و': 'W', 'ؤ': 'W',
-    'ي': 'Y', 'ى': 'A', 'ئ': 'Y',
-    'ء': 'A',
-    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
-}
-
-
-def _arabic_to_latin(text):
-    result = []
-    for ch in text:
-        if 'A' <= ch <= 'Z' or 'a' <= ch <= 'z':
-            result.append(ch.upper())
-        else:
-            mapped = _ARABIC_TO_LATIN.get(ch)
-            if mapped:
-                result.append(mapped)
-    return ''.join(result)
 
 
 class ProductProduct(models.Model):
@@ -91,46 +49,8 @@ class ProductProduct(models.Model):
                 product.barcode_image = False
 
     def _build_barcode(self, product):
-        """
-        Build barcode: [CategoryNumber?][VendorInitials?][default_code]
-
-        Parts are only included when actually present — no fake defaults (00, XX).
-        Examples:
-          category(01) + vendor(AN) + ref(2121) → 01AN2121
-          category(01) + no vendor  + ref(2121) → 012121
-          no category  + vendor(AN) + ref(2121) → AN2121
-          no category  + no vendor  + ref(2121) → 2121
-
-        Returns False if default_code is not set.
-        """
-        if not product.default_code:
-            return False
-
-        prefix = ''
-
-        # Category number — only if explicitly set on the category
-        if product.categ_id and product.categ_id.category_number:
-            prefix += product.categ_id.category_number
-
-        # Vendor initials — only if a vendor is actually linked
-        seller = None
-        if product.product_tmpl_id and product.product_tmpl_id.seller_ids:
-            seller = product.product_tmpl_id.seller_ids[0].partner_id
-        elif product.seller_ids:
-            seller = product.seller_ids[0].partner_id
-
-        if seller and seller.name:
-            name_clean = re.sub(r'[^a-zA-Z؀-ۿ]', '', seller.name).strip()
-            if name_clean:
-                raw_initials = name_clean[:2]
-                vendor_initials = _arabic_to_latin(raw_initials)
-                if len(vendor_initials) > 2:
-                    vendor_initials = vendor_initials[:2]
-                elif len(vendor_initials) < 2:
-                    vendor_initials = vendor_initials.ljust(2, 'X')
-                prefix += vendor_initials
-
-        return '%s%s' % (prefix, product.default_code)
+        """Barcode = Internal Reference (default_code) only."""
+        return product.default_code or False
 
     def action_generate_barcode(self):
         """Generate barcode from default_code — skips products that already have a barcode.
