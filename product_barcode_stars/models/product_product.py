@@ -52,11 +52,30 @@ class ProductProduct(models.Model):
         """Barcode = Internal Reference (default_code) only."""
         return product.default_code or False
 
-    def action_generate_barcode(self):
-        """Generate barcode from default_code — skips products that already have a barcode.
+    def _next_unique_default_code(self, reserved):
+        """Return the next unique default_code not used by any product or in `reserved`.
 
-        Raises UserError if any two selected products share the same default_code
-        (which would produce duplicate barcodes).
+        Finds the maximum numeric default_code across ALL products in the DB,
+        then counts up from there until it finds an unused value.
+        `reserved` is a set of codes already assigned in this batch (in-memory).
+        """
+        # Collect all numeric default_codes from the entire product table
+        self.env.cr.execute(
+            "SELECT default_code FROM product_product WHERE default_code ~ '^[0-9]+$'"
+        )
+        existing_nums = {int(r[0]) for r in self.env.cr.fetchall()}
+        candidate = (max(existing_nums) if existing_nums else 0) + 1
+        while str(candidate) in reserved or candidate in existing_nums:
+            candidate += 1
+        return str(candidate)
+
+    def action_generate_barcode(self):
+        """Generate barcode from default_code.
+
+        - Products that already have a barcode are skipped.
+        - Products without a default_code get an auto-generated unique reference
+          (next integer after the highest numeric default_code in the system).
+        - Raises UserError if two selected products share the same default_code.
         """
         # Uniqueness check: default_code must not be duplicated among selected products
         codes = [p.default_code for p in self if p.default_code and not p.barcode]
@@ -68,34 +87,43 @@ class ProductProduct(models.Model):
             )
 
         generated_count = 0
-        skipped_no_ref = 0
+        auto_ref_count = 0
+        # Track refs generated in this batch so they don't collide with each other
+        reserved_codes = set()
+
         for product in self:
             if product.barcode:
                 continue
+
+            # Auto-generate a unique default_code if the product has none
             if not product.default_code:
-                skipped_no_ref += 1
-                continue
+                new_code = self._next_unique_default_code(reserved_codes)
+                reserved_codes.add(new_code)
+                product.write({'default_code': new_code})
+                auto_ref_count += 1
+
             # Check barcode not already used by another product
+            barcode_val = self._build_barcode(product)
+            if not barcode_val:
+                continue
             existing = self.env['product.product'].search([
-                ('barcode', '=', self._build_barcode(product)),
+                ('barcode', '=', barcode_val),
                 ('id', '!=', product.id),
             ], limit=1)
             if existing:
                 raise UserError(
                     _('الباركود "%s" مستخدم مسبقاً من المنتج "%s".\nتأكد أن الرقم المرجعي فريد.') % (
-                        self._build_barcode(product), existing.display_name
+                        barcode_val, existing.display_name
                     )
                 )
-            barcode_val = self._build_barcode(product)
-            if barcode_val:
-                product.write({'barcode': barcode_val})
-                generated_count += 1
+            product.write({'barcode': barcode_val})
+            generated_count += 1
 
         msg_parts = []
         if generated_count:
             msg_parts.append(_('تم إنشاء %(count)s باركود.') % {'count': generated_count})
-        if skipped_no_ref:
-            msg_parts.append(_('%(count)s منتج بدون رقم مرجعي — تم تخطيه.') % {'count': skipped_no_ref})
+        if auto_ref_count:
+            msg_parts.append(_('تم توليد %(count)s رقم مرجعي تلقائياً للمنتجات بدون رقم.') % {'count': auto_ref_count})
 
         if generated_count:
             return {
