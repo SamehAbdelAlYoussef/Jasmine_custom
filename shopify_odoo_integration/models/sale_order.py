@@ -63,6 +63,13 @@ class SaleOrder(models.Model):
              "order. Used to deduplicate rapid-fire webhooks from Shopify.",
     )
 
+    webhook_last_topic = fields.Char(
+        string='Last Webhook Topic',
+        copy=False,
+        help="Topic of the last processed webhook (e.g. orders/updated). "
+             "Used together with webhook_last_processed for per-topic dedup.",
+    )
+
     x_shopify_payment_synced = fields.Boolean(
         string='Shopify Payments Synced',
         default=False,
