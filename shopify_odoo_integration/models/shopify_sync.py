@@ -1817,7 +1817,8 @@ class ShopifySync(models.Model):
                     has_shipping = True
 
             for item in order_data.get('line_items', []):
-                shopify_line_id = item.get('id')
+                # Always compare as str — JSON gives int, DB field is Char.
+                shopify_line_id = str(item['id']) if item.get('id') else ''
                 # Primary: stable Shopify line item ID
                 if shopify_line_id and shopify_line_id in existing_shopify_line_ids:
                     _logger.debug(
