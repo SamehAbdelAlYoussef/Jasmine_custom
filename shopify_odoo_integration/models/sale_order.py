@@ -33,7 +33,7 @@ class SaleOrderLine(models.Model):
              "was not found in Odoo).",
     )
 
-    x_shopify_line_item_id = fields.Integer(
+    x_shopify_line_item_id = fields.Char(
         string='Shopify Line Item ID',
         copy=False,
         readonly=True,

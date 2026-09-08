@@ -1179,7 +1179,7 @@ class ShopifySync(models.Model):
             'product_uom_qty': float(item.get('quantity', 1)),
             'price_unit': float(item.get('price', 0.0)),
             'name': title,
-            'x_shopify_line_item_id': item.get('id') or 0,
+            'x_shopify_line_item_id': str(item.get('id')) if item.get('id') else '',
         }
 
         if not product:
