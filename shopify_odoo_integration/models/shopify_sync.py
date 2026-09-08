@@ -1060,16 +1060,33 @@ class ShopifySync(models.Model):
             partner = ResPartner.search(
                 [('name', '=', name), ('email', '=', False)], limit=1,
             )
-            return partner or ResPartner.create({'name': name})
+            if partner:
+                return partner
+            try:
+                with self.env.cr.savepoint():
+                    return ResPartner.create({'name': name})
+            except Exception:
+                return ResPartner.search(
+                    [('name', '=', name), ('email', '=', False)], limit=1,
+                ) or ResPartner.create({'name': name})
 
         partner = ResPartner.search([('email', '=', email)], limit=1)
         if partner:
             self._update_partner_address(partner, customer, billing, shipping)
             return partner
 
-        return ResPartner.create(
-            self._prepare_partner_vals(customer, billing, shipping, email),
-        )
+        try:
+            with self.env.cr.savepoint():
+                return ResPartner.create(
+                    self._prepare_partner_vals(customer, billing, shipping, email),
+                )
+        except Exception:
+            # Another worker may have committed the same email between our search and create
+            partner = ResPartner.search([('email', '=', email)], limit=1)
+            if partner:
+                self._update_partner_address(partner, customer, billing, shipping)
+                return partner
+            raise
 
     def _prepare_partner_vals(self, customer, billing, shipping, email):
         first = customer.get('first_name', '') or billing.get('first_name', '')
@@ -1264,14 +1281,9 @@ class ShopifySync(models.Model):
                     label = 'Discount: ' + ', '.join(titles)
 
         Product = self.env['product.product']
-        discount_product = Product.search([('name', '=', 'Shopify Discount')], limit=1)
-        if not discount_product:
-            discount_product = Product.create({
-                'name': 'Shopify Discount',
-                'type': 'service',
-                'sale_ok': True,
-                'purchase_ok': False,
-            })
+        discount_product = self.env.ref(
+            'shopify_odoo_integration.shopify_discount_product', raise_if_not_found=False,
+        ) or Product.search([('name', '=', 'Shopify Discount')], limit=1)
 
         _logger.info(
             "Shopify discount: creating line — order #%s, amount=%.2f, label=%s",
@@ -1400,16 +1412,11 @@ class ShopifySync(models.Model):
         if gross_price > 0 and shipping_discount_total > 0:
             discount_pct = min(100.0, (shipping_discount_total / gross_price) * 100.0)
 
-        # -- get-or-create the Shopify Shipping service product -------------
+        # -- get the Shopify Shipping service product -----------------------
         Product = self.env['product.product']
-        delivery = Product.search([('name', '=', 'Shopify Shipping')], limit=1)
-        if not delivery:
-            delivery = Product.create({
-                'name': 'Shopify Shipping',
-                'type': 'service',
-                'sale_ok': True,
-                'purchase_ok': False,
-            })
+        delivery = self.env.ref(
+            'shopify_odoo_integration.shopify_shipping_product', raise_if_not_found=False,
+        ) or Product.search([('name', '=', 'Shopify Shipping')], limit=1)
 
         # -- label ----------------------------------------------------------
         if shipping_discount_total > 0:
@@ -1523,8 +1530,9 @@ class ShopifySync(models.Model):
                     vals = self._prepare_payment_vals(
                         txn, sale_order, sale_order.partner_id, payment_type,
                     )
-                    payment = Payment.create(vals)
-                    payment.sudo().write({'state': 'in_progress'})
+                    with self.env.cr.savepoint():
+                        payment = Payment.create(vals)
+                        payment.sudo().write({'state': 'in_progress'})
                     created_count += 1
                     _logger.info(
                         "Shopify payment sync: payment %s for SO %s "
@@ -1532,6 +1540,12 @@ class ShopifySync(models.Model):
                         payment.name, sale_order.name, txn_id,
                         amount, payment_type,
                     )
+                except IntegrityError:
+                    _logger.info(
+                        "Shopify payment sync: txn %s already created concurrently, skip",
+                        txn_id,
+                    )
+                    continue
                 except Exception as exc:
                     _logger.warning(
                         "Shopify payment sync: failed to create payment for "
@@ -1657,22 +1671,20 @@ class ShopifySync(models.Model):
     # Webhook deduplication helper
     # -----------------------------------------------------------------
     def _is_duplicate_webhook(self, sale_order, topic, window_seconds=30):
-        """Return True if *topic* was already processed for *sale_order*
-        within *window_seconds*, to prevent rapid-fire duplicate webhooks
-        from Shopify (e.g. ``orders/updated`` firing twice for the same
-        change).
+        """Return True if the same *topic* was already processed for
+        *sale_order* within *window_seconds*.
 
-        **Only deduplicates the SAME topic.**  Different topics (e.g.
-        ``orders/updated`` followed by ``orders/cancelled``) are always
-        allowed through — otherwise a rapid ``orders/updated`` would
-        block the cancellation webhook that arrives a moment later.
+        Per-topic dedup: different topics (e.g. ``orders/updated`` then
+        ``orders/paid``) are always allowed through — only the exact same
+        topic is throttled within the window.
 
-        Updates ``webhook_last_processed`` atomically via a raw SQL
-        compare-and-swap so concurrent webhooks see a consistent view.
+        Updates both ``webhook_last_processed`` and ``webhook_last_topic``
+        atomically via a raw SQL CAS.
         """
         now = fields.Datetime.now()
         last = sale_order.webhook_last_processed
-        if last:
+        last_topic = sale_order.webhook_last_topic
+        if last and last_topic == topic:
             delta = now - last
             if delta.total_seconds() < window_seconds:
                 _logger.info(
@@ -1681,15 +1693,15 @@ class ShopifySync(models.Model):
                 )
                 return True
 
-        # Atomic compare-and-swap: only update if nobody else set it
-        # to a newer value since we read it.
+        # Atomic CAS — update only if topic changed OR timestamp expired
         self.env.cr.execute(
-            'UPDATE sale_order SET webhook_last_processed=%s '
+            'UPDATE sale_order SET webhook_last_processed=%s, webhook_last_topic=%s '
             'WHERE id=%s AND (webhook_last_processed IS NULL '
+            'OR webhook_last_topic IS DISTINCT FROM %s '
             'OR webhook_last_processed <= %s)',
-            [now, sale_order.id, last or now],
+            [now, topic, sale_order.id, topic, last or now],
         )
-        sale_order.invalidate_recordset(['webhook_last_processed'])
+        sale_order.invalidate_recordset(['webhook_last_processed', 'webhook_last_topic'])
         return False
 
     # -----------------------------------------------------------------

@@ -18,6 +18,7 @@
     'depends': ['base', 'sale', 'sale_management', 'stock', 'account', 'sales_orders_payment_follow'],
     'data': [
         'security/ir.model.access.csv',
+        'data/shopify_service_products.xml',
         'data/ir_cron_data.xml',
         'data/ir_cron_stock_sync.xml',
         'views/shopify_order_import_wizard_views.xml',
