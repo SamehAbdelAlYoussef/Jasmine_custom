@@ -1532,11 +1532,10 @@ class ShopifySync(models.Model):
                     )
                     with self.env.cr.savepoint():
                         payment = Payment.create(vals)
-                        payment.sudo().write({'state': 'in_progress'})
                     created_count += 1
                     _logger.info(
                         "Shopify payment sync: payment %s for SO %s "
-                        "(txn=%s, amount=%s, type=%s) [in_progress]",
+                        "(txn=%s, amount=%s, type=%s) [draft]",
                         payment.name, sale_order.name, txn_id,
                         amount, payment_type,
                     )
