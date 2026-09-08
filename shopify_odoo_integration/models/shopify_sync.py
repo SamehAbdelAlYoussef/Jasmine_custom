@@ -1179,6 +1179,7 @@ class ShopifySync(models.Model):
             'product_uom_qty': float(item.get('quantity', 1)),
             'price_unit': float(item.get('price', 0.0)),
             'name': title,
+            'x_shopify_line_item_id': item.get('id') or 0,
         }
 
         if not product:
@@ -1790,32 +1791,59 @@ class ShopifySync(models.Model):
                 )
         else:
             # Order is confirmed/cancelled/done — cannot delete locked lines.
-            # MERGE mode: only add NEW products that don't already exist
-            # on the order, to avoid duplicates while allowing additions.
-            lines_added = 0
+            # MERGE mode: only add line items that are genuinely new.
+            #
+            # Primary key: x_shopify_line_item_id (Shopify's own stable integer
+            # per line, set by _create_order_line since this fix).  This handles
+            # same-product multi-line orders and avoids any name-mismatch issue
+            # (Odoo prefixes names with "[ref]" while Shopify sends plain titles).
+            #
+            # Fallback key: product_id — covers lines created before the field
+            # existed (NULL x_shopify_line_item_id).  A product_id-only key
+            # cannot distinguish two lines for the same product, but that edge
+            # case only affects pre-existing rows with no Shopify line ID.
+            lines_added = False
             existing_lines = existing.order_line
-            # Build a set of (product_id, name) for quick lookup
-            existing_keys = set()
+            # Build lookup sets in one pass; also capture shipping presence.
+            existing_shopify_line_ids = set()
+            existing_product_ids = set()
+            has_shipping = False
             for line in existing_lines:
-                key = (line.product_id.id, line.name.strip() if line.name else '')
-                existing_keys.add(key)
+                if line.x_shopify_line_item_id:
+                    existing_shopify_line_ids.add(line.x_shopify_line_item_id)
+                elif line.product_id:
+                    existing_product_ids.add(line.product_id.id)
+                if line.product_id.name == 'Shopify Shipping':
+                    has_shipping = True
 
             for item in order_data.get('line_items', []):
+                shopify_line_id = item.get('id')
+                # Primary: stable Shopify line item ID
+                if shopify_line_id and shopify_line_id in existing_shopify_line_ids:
+                    _logger.debug(
+                        "Shopify webhook: line item %s already on SO %s, skip",
+                        shopify_line_id, existing.name,
+                    )
+                    continue
+                # Fallback: product_id for pre-existing lines without a Shopify ID
                 title = self._safe_strip(item.get('title') or item.get('name')) or 'Product'
                 sku = self._safe_strip(item.get('sku'))
                 product = self._find_product(sku, title)
                 product_id = product.id if product else False
-                # Check if this line already exists
-                if (product_id, title) in existing_keys:
+                if product_id and product_id in existing_product_ids:
                     _logger.debug(
-                        "Shopify webhook: line '%s' already exists on SO %s, skip",
+                        "Shopify webhook: product '%s' already on SO %s, skip",
                         title, existing.name,
                     )
                     continue
+
                 try:
                     self._create_order_line(existing, item)
-                    existing_keys.add((product_id, title))
-                    lines_added += 1
+                    if shopify_line_id:
+                        existing_shopify_line_ids.add(shopify_line_id)
+                    elif product_id:
+                        existing_product_ids.add(product_id)
+                    lines_added = True
                     _logger.info(
                         "Shopify webhook: added new line '%s' to SO %s",
                         title, existing.name,
@@ -1827,12 +1855,10 @@ class ShopifySync(models.Model):
                     )
 
             # -- shipping: only add if not already present -----------------
-            if not any(
-                l.product_id.name == 'Shopify Shipping' for l in existing_lines
-            ):
+            if not has_shipping:
                 try:
                     self._create_shipping_line(existing, order_data)
-                    lines_added += 1
+                    lines_added = True
                 except Exception as exc:
                     _logger.warning(
                         "Shopify webhook: shipping update failed for SO %s — %s",
@@ -1841,8 +1867,8 @@ class ShopifySync(models.Model):
 
             if lines_added:
                 _logger.info(
-                    "Shopify webhook: merged %d new lines onto SO %s (state=%s)",
-                    lines_added, existing.name, existing.state,
+                    "Shopify webhook: merged new lines onto SO %s (state=%s)",
+                    existing.name, existing.state,
                 )
             else:
                 _logger.info(

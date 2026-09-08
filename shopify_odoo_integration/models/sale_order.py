@@ -33,6 +33,16 @@ class SaleOrderLine(models.Model):
              "was not found in Odoo).",
     )
 
+    x_shopify_line_item_id = fields.Integer(
+        string='Shopify Line Item ID',
+        copy=False,
+        readonly=True,
+        index=True,
+        help="Shopify line_items[].id — stable across order updates. "
+             "Used by the webhook merge logic to detect existing lines "
+             "without relying on product name matching.",
+    )
+
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
