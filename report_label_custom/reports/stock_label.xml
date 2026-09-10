@@ -26,12 +26,12 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col" style="font-size: 12px;text-align: center;">
+                                    <div class="col" style="font-size: 20px;text-align: center;">
                                         <t t-out="line.product_id.barcode"/>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col" style="text-align: center;font-size: 12px;">
+                                    <div class="col" style="text-align: center;font-size: 20px;">
                                         <t t-out="line.product_id.name"/>
                                     </div>
                                 </div>
