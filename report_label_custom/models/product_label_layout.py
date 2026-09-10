@@ -55,9 +55,10 @@ class ProductLabelLayout(models.TransientModel):
         products_data = []
 
         # for product in products:
-        for product  in self.move_ids: 
+        for move  in self.move_ids: 
             # ✅ توليد barcode base64 مرة واحدة لكل منتج
             barcode_src = ''
+            product = move.product_id
             if product.default_code:
                 barcode_src = self._generate_barcode_base64(product.default_code)
 
