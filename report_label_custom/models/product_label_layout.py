@@ -62,7 +62,7 @@ class ProductLabelLayout(models.TransientModel):
             if product.default_code:
                 barcode_src = self._generate_barcode_base64(product.default_code)
 
-            for _ in range(move.quantity):
+            for _ in range(int(move.quantity)):
                 products_data.append({
                     'id': product.id,
                     'name': product.name,
