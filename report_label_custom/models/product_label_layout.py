@@ -70,6 +70,7 @@ class ProductLabelLayout(models.TransientModel):
                     'barcode_src': barcode_src,  # ✅ base64 مباشرة
                     'list_price': product.list_price,
                     'currency_symbol': product.currency_id.symbol or '',
+                    'x_size' : product.x_size or '',
                 })
 
         xml_id = 'report_label_custom.action_report_product_label_custom'
