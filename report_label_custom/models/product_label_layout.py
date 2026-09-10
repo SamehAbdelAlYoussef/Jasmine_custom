@@ -37,7 +37,7 @@ class ProductLabelLayout(models.TransientModel):
 
         if self.custom_quantity <= 0:
             # raise UserError('You need to set a positive quantity.')
-            raise UserError(f"{self.move_ids[0].quantity} and {self.move_ids[0].product_id.name}")
+            raise UserError(f"{self.move_ids[0].quantity} and {self.move_ids[0].product_id.name} and {self.move_ids[0].product_id.barcode}")
 
         if self.product_tmpl_ids:
             products = self.env['product.product'].sudo().search([
@@ -54,13 +54,14 @@ class ProductLabelLayout(models.TransientModel):
         qty = self.custom_quantity
         products_data = []
 
-        for product in products:
+        # for product in products:
+        for product  in self.move_ids: 
             # ✅ توليد barcode base64 مرة واحدة لكل منتج
             barcode_src = ''
             if product.barcode:
                 barcode_src = self._generate_barcode_base64(product.barcode)
 
-            for _ in range(qty):
+            for _ in range(quantity):
                 products_data.append({
                     'id': product.id,
                     'name': product.name,
