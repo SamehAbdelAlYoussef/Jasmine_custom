@@ -95,7 +95,7 @@
                     class="label-num"><t t-out="p['barcode']"/></div>-->
                     <p class="label-name"  style='font-size:15px;' >
                         <t t-out="p['name']" />
-                        <t t-out="p['barcode']"/>
+                        <t t-out="p['x_size']"/>
                     </p>
 
                 </div>
