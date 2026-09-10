@@ -37,7 +37,7 @@ class ProductLabelLayout(models.TransientModel):
 
         if self.custom_quantity <= 0:
             # raise UserError('You need to set a positive quantity.')
-            raise UserError(self.fields , self)
+            raise UserError(self._fields , self)
 
         if self.product_tmpl_ids:
             products = self.env['product.product'].sudo().search([
