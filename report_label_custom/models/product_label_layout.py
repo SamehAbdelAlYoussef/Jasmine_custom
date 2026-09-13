@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import base64
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -16,6 +16,18 @@ class ProductLabelLayout(models.TransientModel):
         default='custom',
         required=True,
     )
+    partner_id = fields.Many2one(
+        'res.partner',
+        string='Partner',
+        compute='_compute_partner_id',
+        readonly=True,
+        help='Partner for the label',
+    )
+
+    @api.depends('move_ids.partner_id')
+    def _compute_partner_id(self):
+        for record in self:
+            record.partner_id = record.move_ids[:1].partner_id if record.move_ids else False
 
     def _generate_barcode_base64(self, barcode_value):
         """توليد barcode كـ base64 مباشرة بدون HTTP request."""
@@ -36,7 +48,8 @@ class ProductLabelLayout(models.TransientModel):
             return super()._prepare_report_data()
 
         if self.custom_quantity <= 0:
-            raise UserError(_('You need to set a positive quantity.'))
+            raise UserError('You need to set a positive quantity.')
+            # raise UserError(f"{self.move_ids[0].quantity} and {self.move_ids[0].product_id.name} and {self.move_ids[0].product_id.default_code}")
 
         if self.product_tmpl_ids:
             products = self.env['product.product'].sudo().search([
@@ -53,24 +66,28 @@ class ProductLabelLayout(models.TransientModel):
         qty = self.custom_quantity
         products_data = []
 
-        for product in products:
+        # for product in products:
+        for move  in self.move_ids: 
             # ✅ توليد barcode base64 مرة واحدة لكل منتج
             barcode_src = ''
-            if product.barcode:
-                barcode_src = self._generate_barcode_base64(product.barcode)
+            product = move.product_id
+            if product.default_code:
+                barcode_src = self._generate_barcode_base64(product.default_code)
 
-            for _ in range(qty):
+            for _ in range(int(move.quantity)):
                 products_data.append({
                     'id': product.id,
                     'name': product.name,
-                    'barcode': product.barcode or '',
+                    'barcode': product.default_code or '',
                     'barcode_src': barcode_src,  # ✅ base64 مباشرة
                     'list_price': product.list_price,
                     'currency_symbol': product.currency_id.symbol or '',
+                    'x_size' : product.x_size or '',
                 })
 
         xml_id = 'report_label_custom.action_report_product_label_custom'
         data = {
+            'x_vendor_code': self.partner_id.x_vendor_code,
             'active_model': 'product.product',
             'quantity_by_product': {p.id: qty for p in products},
             'layout_wizard': self.id,

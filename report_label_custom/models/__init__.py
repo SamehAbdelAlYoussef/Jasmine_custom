@@ -3,3 +3,4 @@
 from . import product_label_layout
 from . import product_template
 from . import stock
+from . import partner
