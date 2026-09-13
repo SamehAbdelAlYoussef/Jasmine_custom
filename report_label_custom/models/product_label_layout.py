@@ -83,6 +83,7 @@ class ProductLabelLayout(models.TransientModel):
                     'list_price': product.list_price,
                     'currency_symbol': product.currency_id.symbol or '',
                     'x_size' : product.x_size or '',
+                    'x_vendor_code': self.partner_id.x_vendor_code or '',
                 })
 
         xml_id = 'report_label_custom.action_report_product_label_custom'
