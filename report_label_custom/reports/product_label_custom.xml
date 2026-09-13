@@ -82,7 +82,7 @@
 
                     <t t-if="p['barcode']">
                         <div t-out="p['barcode']"
-                            t-options="{'widget': 'barcode',  'symbology': 'Code128', 'quiet': 0,                   'img_style': 'width:60mm; height:18mm; display:block; margin-top:-30px;', 'img_class': '' }" />
+                            t-options="{'widget': 'barcode',  'symbology': 'Code128', 'quiet': 1,                   'img_style': 'width:60mm; height:18mm; display:block; margin-top:-30px;', 'img_class': '' }" />
                     </t>
                     <t t-else="">
                         <div
@@ -96,6 +96,7 @@
                     <p class="label-name"  style='font-size:15px;' >
                         <t t-out="p['name']" />
                         <t t-out="p['x_size']"/>
+                        <t t-out="p['x_vendor_code']"/>
                     </p>
 
                 </div>

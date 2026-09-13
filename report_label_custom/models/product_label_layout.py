@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import base64
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -16,6 +16,18 @@ class ProductLabelLayout(models.TransientModel):
         default='custom',
         required=True,
     )
+    partner_id = fields.Many2one(
+        'res.partner',
+        string='Partner',
+        compute='_compute_partner_id',
+        readonly=True,
+        help='Partner for the label',
+    )
+
+    @api.depends('move_ids.partner_id')
+    def _compute_partner_id(self):
+        for record in self:
+            record.partner_id = record.move_ids[:1].partner_id if record.move_ids else False
 
     def _generate_barcode_base64(self, barcode_value):
         """توليد barcode كـ base64 مباشرة بدون HTTP request."""
@@ -75,6 +87,7 @@ class ProductLabelLayout(models.TransientModel):
 
         xml_id = 'report_label_custom.action_report_product_label_custom'
         data = {
+            'x_vendor_code': self.partner_id.x_vendor_code,
             'active_model': 'product.product',
             'quantity_by_product': {p.id: qty for p in products},
             'layout_wizard': self.id,

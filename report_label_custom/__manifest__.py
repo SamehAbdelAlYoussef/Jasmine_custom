@@ -9,6 +9,7 @@
         'views/product_label_layout_views.xml',
         'views/product_views.xml',
         'views/stock_picking_view.xml',
+        'views/res_partner_views.xml',
         'reports/product_label_custom.xml',
         'reports/stock_label.xml',
         'data/server_action.xml',
