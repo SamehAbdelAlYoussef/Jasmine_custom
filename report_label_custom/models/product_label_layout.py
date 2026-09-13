@@ -24,7 +24,7 @@ class ProductLabelLayout(models.TransientModel):
         help='Partner for the label',
     )
 
-    @api.depends('move_ids.partner_id')
+    # @api.depends('move_ids')
     def _compute_partner_id(self):
         for record in self:
             record.partner_id = record.move_ids[:1].partner_id if record.move_ids else False
