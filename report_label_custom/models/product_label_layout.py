@@ -27,7 +27,7 @@ class ProductLabelLayout(models.TransientModel):
     # @api.depends('move_ids')
     def _compute_partner_id(self):
         for record in self:
-            record.partner_id = record.move_ids[:1].partner_id if record.move_ids else False
+            record.partner_id = record.move_ids[:1].picking_id.partner_id if record.move_ids else False
 
     def _generate_barcode_base64(self, barcode_value):
         """توليد barcode كـ base64 مباشرة بدون HTTP request."""
