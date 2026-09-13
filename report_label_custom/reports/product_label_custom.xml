@@ -96,7 +96,7 @@
                     <p class="label-name"  style='font-size:15px;' >
                         <t t-out="p['name']" />
                         <t t-out="p['x_size']"/>
-                        <t t-out="p['x_vendor_code']"/>
+                        <t t-out='x_vendor_code'/>
                     </p>
 
                 </div>
