@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import base64
+import io
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -24,32 +25,17 @@ class ProductLabelLayout(models.TransientModel):
         help='Partner for the label',
     )
 
-    # @api.depends('move_ids')
+    @api.depends('move_ids.picking_id.partner_id')
     def _compute_partner_id(self):
         for record in self:
             record.partner_id = record.move_ids[:1].picking_id.partner_id if record.move_ids else False
-
-    def _generate_barcode_base64(self, barcode_value):
-        """توليد barcode كـ base64 مباشرة بدون HTTP request."""
-        try:
-            from odoo.tools.image import image_process
-            # استخدم Odoo built-in barcode generator
-            barcode_obj = self.env['ir.actions.report'].barcode(
-                'Code128', barcode_value, width=180, height=60, humanreadable=False
-            )
-            encoded = base64.b64encode(barcode_obj).decode('utf-8')
-            return 'data:image/png;base64,%s' % encoded
-        except Exception as e:
-            _logger.warning("Barcode generation failed for %s: %s", barcode_value, e)
-            return ''
 
     def _prepare_report_data(self):
         if self.print_format != 'custom':
             return super()._prepare_report_data()
 
         if self.custom_quantity <= 0:
-            # raise UserError('You need to set a positive quantity.')
-            raise UserError(f"{self.partner_id.x_vendor_code}")
+            raise UserError('You need to set a positive quantity.')
 
         if self.product_tmpl_ids:
             products = self.env['product.product'].sudo().search([
@@ -65,25 +51,19 @@ class ProductLabelLayout(models.TransientModel):
 
         qty = self.custom_quantity
         products_data = []
+        x_vendor_code = self.partner_id.x_vendor_code or '' if self.partner_id else ''
 
-        # for product in products:
-        for move  in self.move_ids: 
-            # ✅ توليد barcode base64 مرة واحدة لكل منتج
-            barcode_src = ''
+        for move in self.move_ids:
             product = move.product_id
-            if product.default_code:
-                barcode_src = self._generate_barcode_base64(product.default_code)
-
             for _ in range(int(move.quantity)):
                 products_data.append({
                     'id': product.id,
-                    'name': product.name,
+                    'name': product.product_tmpl_id.name,
                     'barcode': product.default_code or '',
-                    'barcode_src': barcode_src,  # ✅ base64 مباشرة
                     'list_price': product.list_price,
                     'currency_symbol': product.currency_id.symbol or '',
-                    'x_size' : product.x_size or '',
-                    'x_vendor_code': self.partner_id.x_vendor_code or '',
+                    'x_size': product.x_size or '',
+                    'x_vendor_code': x_vendor_code,
                 })
 
         xml_id = 'report_label_custom.action_report_product_label_custom'
@@ -108,8 +88,47 @@ class ProductLabelLayout(models.TransientModel):
                 'Unable to find report template for %s format', self.print_format
             ))
 
-        report_action = self.env.ref(xml_id).report_action(
-            None, data=data, config=False
-        )
-        report_action.update({'close_on_report_download': True})
-        return report_action
+        products_data = data.get('products_data', [])
+        BATCH_SIZE = 80
+
+        if len(products_data) <= BATCH_SIZE:
+            report_action = self.env.ref(xml_id).report_action(None, data=data, config=False)
+            report_action.update({'close_on_report_download': True})
+            return report_action
+
+        # Split into batches and merge PDFs to avoid wkhtmltopdf crash on large receipts
+        report = self.env.ref(xml_id)
+        batches = [products_data[i:i + BATCH_SIZE] for i in range(0, len(products_data), BATCH_SIZE)]
+        pdf_parts = []
+
+        for batch in batches:
+            batch_data = dict(data)
+            batch_data['products_data'] = batch
+            pdf_content, _ = report._render_qweb_pdf(xml_id, data=batch_data)
+            pdf_parts.append(pdf_content)
+
+        # Merge all PDF parts
+        from PyPDF2 import PdfMerger
+        merger = PdfMerger()
+        for pdf_bytes in pdf_parts:
+            merger.append(io.BytesIO(pdf_bytes))
+
+        output = io.BytesIO()
+        merger.write(output)
+        merger.close()
+        merged_pdf = output.getvalue()
+
+        attachment = self.env['ir.attachment'].sudo().create({
+            'name': 'product_labels.pdf',
+            'datas': base64.b64encode(merged_pdf),
+            'mimetype': 'application/pdf',
+            'res_model': 'product.label.layout',
+            'res_id': self.id,
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/web/content/%d?download=true' % attachment.id,
+            'target': 'self',
+            'close_on_report_download': True,
+        }

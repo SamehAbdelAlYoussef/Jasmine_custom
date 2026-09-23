@@ -33,47 +33,37 @@
                 html, body {
                     width: 38mm;
                     height: 25mm;
-                <!--overflow:
-                hidden;-->
-                font-family: 'Noto Sans Arabic', 'Noto Naskh Arabic', 'DejaVu Sans', Arial, sans-serif;
-
+                    font-family: 'Noto Sans Arabic', 'Noto Naskh Arabic', 'DejaVu Sans', Arial, sans-serif;
                 }
                 .label-page {
                     width: 38mm;
                     height: 25mm;
-                <!--overflow:
-                hidden;-->
                     text-align: center;
-                                 font-family: 'Noto Sans Arabic', 'Noto Naskh Arabic', 'DejaVu Sans', Arial, sans-serif;
-
+                    font-family: 'Noto Sans Arabic', 'Noto Naskh Arabic', 'DejaVu Sans', Arial, sans-serif;
                     padding-top: 15mm;
                     padding-left: 10mm;
-
                 }
                 .label-page img {
                     display: block;
                     margin: 0 auto;
                 }
                 .label-num {
-                  font-size: 15px;
-               font-size: 15px;
-                margin-top: 0.3mm;
-                letter-spacing: 0.5px;
-                text-align: center;
-                padding-left: 0mm;
-                width: 271px !important;
-                max-width: 245% !important;
-
+                    font-size: 15px;
+                    margin-top: 0.3mm;
+                    letter-spacing: 0.5px;
+                    text-align: center;
+                    width: 271px !important;
+                    max-width: 245% !important;
                 }
-             .label-name {
-                font-size: 7px;
-                font-weight: bold;
-                margin-top: 3px !important;
-                width: 271px !important;
-                max-width: 245% !important;
-             font-family: 'Noto Sans Arabic', 'DejaVu Sans', 'Arial', sans-serif;
-
-            }
+                .label-name {
+                    font-size: 13px;
+                    font-weight: bold;
+                    margin-top: 1px !important;
+                    width: 271px !important;
+                    max-width: 245% !important;
+                    font-family: 'Noto Sans Arabic', 'DejaVu Sans', 'Arial', sans-serif;
+                    line-height: 1.3;
+                }
             </style>
 
             <t t-foreach="products_data" t-as="p">
@@ -91,14 +81,11 @@
                         </div>
                     </t>
 
-                    <!--<div
-                    class="label-num"><t t-out="p['barcode']"/></div>-->
-                    <p class="label-name"  style='font-size:15px;' >
+                    <p class="label-name">
                         <t t-out="p['name']" />
-                        <t t-out="p['x_size']"/>
-                           <div class='page-break-after:always;' style='font-weight: bold;'>
-                        <t t-out="x_vendor_code" style='font-weight: bold;'/>
-                        </div>
+                    </p>
+                    <p class="label-name" style="margin-top:1px !important;">
+                        <t t-out="p['x_vendor_code']"/>
                     </p>
 
                 </div>
