@@ -55,10 +55,19 @@ class ProductLabelLayout(models.TransientModel):
 
         for move in self.move_ids:
             product = move.product_id
+            name = product.product_tmpl_id.name or ''
+            # Shrink the font for long names so they fit on the 38x25mm label
+            if len(name) <= 25:
+                font_size = 22
+            elif len(name) <= 45:
+                font_size = 18
+            else:
+                font_size = 14
             for _ in range(int(move.quantity)):
                 products_data.append({
                     'id': product.id,
-                    'name': product.product_tmpl_id.name,
+                    'name': name,
+                    'font_size': font_size,
                     'barcode': product.default_code or '',
                     'list_price': product.list_price,
                     'currency_symbol': product.currency_id.symbol or '',

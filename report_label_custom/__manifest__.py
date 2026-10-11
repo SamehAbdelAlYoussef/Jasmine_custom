@@ -1,6 +1,6 @@
 {
     'name': 'Custom Product Label',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'summary': 'Print custom barcode labels for products and stock pickings',
     'author': 'Sameh AbdelAl',
     'sequence': 4,

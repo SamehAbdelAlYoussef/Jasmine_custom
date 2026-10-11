@@ -45,7 +45,7 @@
                                 <div style="width:100%; height:16mm; background:#ffcccc; text-align:center; font-size:6px; line-height:16mm;">No Barcode</div>
                             </t>
 
-                            <div style="font-size:22px; font-weight:bold; line-height:1.2; margin-top:1mm;">
+                            <div t-att-style="'font-size:%dpx; font-weight:bold; line-height:1.2; margin-top:1mm;' % p.get('font_size', 22)">
                                 <t t-out="p['name']"/>
                             </div>
 
